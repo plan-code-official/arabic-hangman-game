@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=لعبة المشنقة المصورة
+Comment=تشغيل لعبة المشنقة وتخمين الكلمة
+Exec="/media/alnesr/WindowsData/mGame/arabic-hangman-game/run.sh"
+Path=/media/alnesr/WindowsData/mGame/arabic-hangman-game
+Terminal=false
+Type=Application
+Icon=applications-games
+Categories=Game;

@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    background: radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d1a 100%);
+    min-height: 100vh;
+    font-family: 'Tajawal', 'Cairo', sans-serif;
+  }
+}
+
+.neon-orange-glow {
+  filter: drop-shadow(0 0 10px rgba(255, 120, 40, 0.7));
+}
+
+.neon-orange-text {
+  text-shadow: 0 0 12px rgba(255, 120, 40, 0.8), 0 0 24px rgba(255, 120, 40, 0.4);
+}
+
+.neon-green-glow {
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4), inset 0 0 6px rgba(16, 185, 129, 0.2);
+}
+
+.neon-red-glow {
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.3), inset 0 0 6px rgba(239, 68, 68, 0.2);
+}
+
+.neon-gold-text {
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.6);
+}
+
+@keyframes pop {
+  0% { transform: scale(0.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+@keyframes bounceShort {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-pop {
+  animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+.animate-bounce-short {
+  animation: bounceShort 0.5s ease-in-out;
+}
+
+/* Custom smooth transitions */
+button {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.94);
+}
