@@ -9,6 +9,8 @@ interface GameOverModalProps {
   onNextWord: () => void;
   onRestart: () => void;
   streak: number;
+  isLastQuestion?: boolean;
+  onFinishSession?: () => void;
 }
 
 export const GameOverModal: React.FC<GameOverModalProps> = ({
@@ -17,6 +19,8 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   onNextWord,
   onRestart,
   streak,
+  isLastQuestion = false,
+  onFinishSession,
 }) => {
   const isWon = status === 'won';
 
@@ -96,20 +100,24 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
         {/* Action Buttons */}
         <div className="w-full flex items-center gap-2 mt-2">
           <button
-            onClick={onNextWord}
-            className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#ff7828] to-[#f59e0b] hover:from-[#ff8838] hover:to-[#fbb028] text-white font-black text-base shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 transition"
+            type="button"
+            onClick={isLastQuestion ? onFinishSession : onNextWord}
+            className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-[#ff7828] to-[#f59e0b] hover:from-[#ff8838] hover:to-[#fbb028] text-white font-black text-base shadow-lg shadow-orange-500/30 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
           >
-            <span>كلمة تالية</span>
+            <span>{isLastQuestion ? 'عرض النتيجة النهائية 🏆' : 'السؤال التالي'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
-          <button
-            onClick={onRestart}
-            className="p-3 rounded-xl bg-[#252548] hover:bg-[#32325c] border border-[#3b3b68] text-gray-300 hover:text-white transition"
-            title="إعادة نفس الكلمة"
-          >
-            <RefreshCw className="w-5 h-5" />
-          </button>
+          {!isLastQuestion && (
+            <button
+              type="button"
+              onClick={onRestart}
+              className="p-3 rounded-xl bg-[#252548] hover:bg-[#32325c] border border-[#3b3b68] text-gray-300 hover:text-white transition cursor-pointer"
+              title="إعادة نفس الكلمة"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </div>

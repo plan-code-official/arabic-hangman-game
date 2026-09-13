@@ -31,25 +31,28 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto px-2 pb-4 flex flex-col items-center gap-1.5 md:gap-2 select-none">
+    <div className="w-full flex flex-col items-center gap-1.5 sm:gap-2 select-none">
       {ARABIC_ALPHABET_ROWS.map((row, rowIndex) => (
         <div
           key={rowIndex}
-          className="flex items-center justify-center gap-1.5 md:gap-2 w-full"
+          className="flex items-center justify-center gap-1 sm:gap-1.5 md:gap-2 w-full"
         >
           {row.map((letter) => {
             const state = getKeyState(letter);
             const isGuessed = state !== 'idle';
 
-            let btnStyle =
-              'bg-[#232342] hover:bg-[#32325c] border border-[#3a3a66] text-white hover:border-[#ff7828] active:scale-95';
+            // Key styles matching the user screenshot with rich shadow and blur
+            let btnClass =
+              'bg-white/95 hover:bg-white text-slate-800 border-2 border-white/90 shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-lg active:scale-95';
 
-            if (state === 'correct') {
-              btnStyle =
-                'bg-emerald-600/90 border border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.5)] scale-[0.98] font-black';
-            } else if (state === 'wrong') {
-              btnStyle =
-                'bg-[#381622] border border-[#6b1e32] text-rose-300/60 opacity-60 pointer-events-none';
+            if (state === 'wrong') {
+              // Solid vibrant red key
+              btnClass =
+                'bg-[#ef4444] text-white border-2 border-red-300 shadow-[0_6px_16px_rgba(239,68,68,0.45)] pointer-events-none';
+            } else if (state === 'correct') {
+              // Solid vibrant blue key
+              btnClass =
+                'bg-[#2563eb] text-white border-2 border-blue-300 shadow-[0_6px_16px_rgba(37,99,235,0.45)] pointer-events-none';
             }
 
             return (
@@ -58,12 +61,9 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
                 type="button"
                 onClick={() => onKeyPress(letter)}
                 disabled={disabled || isGuessed}
-                className={`
-                  flex-1 max-w-[48px] h-10 md:h-12 rounded-xl flex items-center justify-center 
-                  text-base md:text-lg font-bold transition-all duration-150 shadow-md
-                  disabled:cursor-not-allowed
-                  ${btnStyle}
-                `}
+                className={`w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-xl sm:rounded-2xl font-black text-lg sm:text-xl md:text-2xl flex items-center justify-center transition-all duration-150 cursor-pointer ${btnClass} ${
+                  disabled ? 'opacity-50 pointer-events-none' : ''
+                }`}
               >
                 {letter}
               </button>

@@ -235,6 +235,14 @@ export const INITIAL_WORDS: WordItem[] = [
 
   // Nature & Places (طبيعة ومعالم)
   {
+    id: 'nat-sea',
+    word: 'بحر',
+    category: 'nature_places',
+    categoryNameAr: 'طبيعة ومعالم',
+    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=80',
+    hint: 'مسطح مائي واسع ذو مياه مالحة'
+  },
+  {
     id: 'nat-1',
     word: 'شمس',
     category: 'nature_places',

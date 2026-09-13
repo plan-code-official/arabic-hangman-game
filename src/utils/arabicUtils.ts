@@ -1,11 +1,10 @@
 // Arabic letters normalization and utils
 
 export const ARABIC_ALPHABET_ROWS = [
-  ['أ', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ'],
-  ['د', 'ذ', 'ر', 'ز', 'س', 'ش', 'ص'],
-  ['ض', 'ط', 'ظ', 'ع', 'غ', 'ف', 'ق'],
-  ['ك', 'ل', 'م', 'ن', 'ه', 'و', 'ي'],
-  ['ة', 'ء', 'ى', 'ئ', 'ؤ']
+  ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د'],
+  ['ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط'],
+  ['ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م'],
+  ['ن', 'ه', 'و', 'ي'],
 ];
 
 // Flat list of all available keyboard letters
@@ -31,14 +30,19 @@ export function normalizeArabicChar(char: string): string {
     return 'ا';
   }
   
-  // Normalize Taa Marbuta / Haa
+  // Normalize Taa Marbuta / Haa (allows 'ه' on keyboard to match 'ة' in words like فراولة and نظارة)
   if (normalized === 'ة') {
-    return 'ة';
+    return 'ه';
   }
   
-  // Normalize Yaa / Alef Maksura
-  if (normalized === 'ى') {
+  // Normalize Yaa / Alef Maksura / Hamza on Nabra (e.g. طائرة)
+  if (['ى', 'ئ'].includes(normalized)) {
     return 'ي';
+  }
+
+  // Normalize Waw with Hamza
+  if (normalized === 'ؤ') {
+    return 'و';
   }
 
   return normalized;

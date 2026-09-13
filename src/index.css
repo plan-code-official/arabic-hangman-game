@@ -2,7 +2,7 @@
 
 @layer base {
   body {
-    background: radial-gradient(circle at 50% 20%, #1a1a35 0%, #0d0d1a 100%);
+    background-color: #0b0f19;
     min-height: 100vh;
     font-family: 'Tajawal', 'Cairo', sans-serif;
   }
@@ -54,6 +54,20 @@
 
 .animate-bounce-short {
   animation: bounceShort 0.5s ease-in-out;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+.animate-float {
+  animation: float 3.5s ease-in-out infinite;
 }
 
 /* Custom smooth transitions */
