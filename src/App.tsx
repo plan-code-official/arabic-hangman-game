@@ -21,6 +21,7 @@ import { GameOverModal } from './components/GameOverModal';
 import { SessionResultModal } from './components/SessionResultModal';
 import { CategorySelector } from './components/CategorySelector';
 import { CustomWordModal } from './components/CustomWordModal';
+import WelcomeScreen from './components/WelcomeScreen';
 
 import { Volume2, VolumeX, RotateCcw, Loader2, AlertCircle, Play, Sparkles } from 'lucide-react';
 import bgImage from './assets/Desktop - 91.png';
@@ -50,6 +51,7 @@ export const App: React.FC = () => {
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [isSubmittingFinal, setIsSubmittingFinal] = useState<boolean>(false);
   const [sessionCompletionData, setSessionCompletionData] = useState<SessionCompletionData | null>(null);
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
 
   // Accumulated answers for submission: Array of { questionId, selectedAnswer, timeTaken }
   const accumulatedAnswersRef = useRef<AnswerSubmission[]>([]);
@@ -477,21 +479,16 @@ export const App: React.FC = () => {
   };
 
   // -------------------------------------------------------------
-  // RENDER: Loading Spinner
+  // RENDER: Welcome Screen (replaces Loading Spinner)
   // -------------------------------------------------------------
-  if (isLoading) {
+  if (!hasStarted) {
     return (
-      <div className="relative min-h-screen w-full flex items-center justify-center font-arabic select-none">
-        <div
-          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-          style={{ backgroundImage: `url("${bgImage}")` }}
-        />
-        <div className="relative z-10 p-8 rounded-3xl bg-black/60 backdrop-blur-2xl border border-white/20 text-white flex flex-col items-center gap-4 text-center max-w-sm shadow-2xl animate-pop">
-          <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
-          <h3 className="text-xl font-black">جاري تجهيز التحدي...</h3>
-          <p className="text-sm text-slate-300">يتم الآن جلب أسئلة الدرس وبدء جلسة اللعبة</p>
-        </div>
-      </div>
+      <WelcomeScreen
+        questionCount={isDemoMode ? activeDemoWordsPool.length : apiQuestions.length}
+        onStart={() => setHasStarted(true)}
+        isLoading={isLoading}
+        hasError={!!initError}
+      />
     );
   }
 

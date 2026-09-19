@@ -1,0 +1,135 @@
+.welcome-screen-new {
+  direction: rtl;
+  background: radial-gradient(circle at center, #113645, #08171d);
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.welcome-header {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  padding: 10px 25px;
+  /* To ensure the inner contents are aligned correctly */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 180px;
+  min-height: 60px;
+}
+
+.welcome-stats-bg {
+  direction: ltr; /* Mandatory to keep QuestionCoin on left and GoldCoin on right */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: bold;
+  color: white;
+  width: 100%;
+}
+
+.stat-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.stat-icon.gold-coin {
+  width: 32px;
+  height: 32px;
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.stat-separator {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.2rem;
+}
+
+.xp-value {
+  color: #FFD700; /* Yellow for XP */
+}
+
+.welcome-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  width: 100%;
+  z-index: 1;
+}
+
+.description-img {
+  max-width: 100%;
+  width: 600px; /* Constraint for responsiveness */
+  height: auto;
+  object-fit: contain;
+}
+
+.welcome-footer {
+  padding-bottom: 50px;
+  z-index: 1;
+}
+
+.start-button {
+  background-color: transparent;
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-size: 2.2rem;
+  font-weight: 900;
+  width: 280px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+  transition: transform 0.2s ease;
+  padding-bottom: 15px; /* Slightly extra padding-bottom to vertically center text */
+  font-family: inherit;
+}
+
+.start-button:hover:not(:disabled) {
+  transform: scale(1.05);
+}
+
+.start-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+@media (max-width: 768px) {
+  .welcome-screen-new {
+    justify-content: space-evenly;
+  }
+
+  .welcome-header {
+    position: relative;
+    top: 0;
+    right: 0;
+    margin-top: 30px;
+  }
+
+  .welcome-body {
+    flex: none;
+  }
+}
