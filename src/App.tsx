@@ -22,6 +22,8 @@ import { SessionResultModal } from './components/SessionResultModal';
 import { CategorySelector } from './components/CategorySelector';
 import { CustomWordModal } from './components/CustomWordModal';
 import WelcomeScreen from './components/WelcomeScreen';
+import Celebration from './components/CelebrationWrapper';
+import ResultsPanel from './components/ResultsPanelWrapper';
 
 import { Volume2, VolumeX, RotateCcw, Loader2, AlertCircle, Play, Sparkles } from 'lucide-react';
 import bgImage from './assets/Desktop - 91.png';
@@ -52,6 +54,8 @@ export const App: React.FC = () => {
   const [isSubmittingFinal, setIsSubmittingFinal] = useState<boolean>(false);
   const [sessionCompletionData, setSessionCompletionData] = useState<SessionCompletionData | null>(null);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const [showCelebration, setShowCelebration] = useState<boolean>(false);
+  const [showResults, setShowResults] = useState<boolean>(false);
 
   // Accumulated answers for submission: Array of { questionId, selectedAnswer, timeTaken }
   const accumulatedAnswersRef = useRef<AnswerSubmission[]>([]);
@@ -228,9 +232,10 @@ export const App: React.FC = () => {
     
     if (apiQuestions.length > 0 && apiQuestions[roundIndex]) {
       const currentQ = apiQuestions[roundIndex];
+      const wrongOption = currentQ.options?.find(opt => opt.text !== currentQ.correctAnswer)?.text || 'خاطئ';
       const submission: AnswerSubmission = {
         questionId: currentQ.id,
-        selectedAnswer: isWon ? currentQ.correctAnswer : (currentQ.options?.[0]?.text || 'خاطئ'),
+        selectedAnswer: isWon ? currentQ.correctAnswer : wrongOption,
         timeTaken,
       };
       accumulatedAnswersRef.current.push(submission);
@@ -267,7 +272,17 @@ export const App: React.FC = () => {
         const completeRes = await completeGameSession(sessionId, token);
         if (completeRes.success && completeRes.data) {
           setSessionCompletionData(completeRes.data);
-          sounds.playWin();
+          
+          const correctCount = accumulatedAnswersRef.current.filter(
+            (a) => a.selectedAnswer !== 'خاطئ' && a.selectedAnswer !== 'none'
+          ).length;
+          
+          if (correctCount > 0) {
+            setShowCelebration(true);
+            sounds.playWin();
+          } else {
+            setShowResults(true);
+          }
         } else {
           throw new Error('لم يتم استلام بيانات إكمال الجلسة');
         }
@@ -290,6 +305,12 @@ export const App: React.FC = () => {
           reward: null,
           isNewReward: false,
         });
+        
+        if (correctCount > 0) {
+          setShowCelebration(true);
+        } else {
+          setShowResults(true);
+        }
       } finally {
         setIsSubmittingFinal(false);
       }
@@ -314,8 +335,14 @@ export const App: React.FC = () => {
       reward: null,
       isNewReward: false,
     });
+    
+    if (correctCount > 0) {
+      setShowCelebration(true);
+      sounds.playWin();
+    } else {
+      setShowResults(true);
+    }
     setIsSubmittingFinal(false);
-    sounds.playWin();
   }, [sessionId, token, apiQuestions, totalRounds]);
 
   // Next round handler
@@ -477,6 +504,17 @@ export const App: React.FC = () => {
       startDemoGame();
     }
   };
+
+  const handleCelebrationComplete = useCallback(() => {
+    setShowCelebration(false);
+    setShowResults(true);
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    setShowResults(false);
+    setSessionCompletionData(null);
+    restartEntireGame();
+  }, [restartEntireGame]);
 
   // -------------------------------------------------------------
   // RENDER: Welcome Screen (replaces Loading Spinner)
@@ -733,11 +771,24 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* MODAL 2: Final Session Results (Score, Stars, Coins, XP) */}
-      {sessionCompletionData && (
-        <SessionResultModal
-          data={sessionCompletionData}
-          onRestart={restartEntireGame}
+      {/* MODAL 2: Final Session Results (Celebration & ResultsPanel) */}
+      {showCelebration && (
+        <Celebration 
+          isVisible={showCelebration} 
+          onComplete={handleCelebrationComplete} 
+          muted={isMuted}
+        />
+      )}
+
+      {showResults && sessionCompletionData && (
+        <ResultsPanel
+          score={sessionCompletionData.score || 0}
+          totalScore={totalRounds * 20}
+          correctAnswers={Math.round((sessionCompletionData.percentage / 100) * totalRounds) || 0}
+          wrongAnswers={totalRounds - (Math.round((sessionCompletionData.percentage / 100) * totalRounds) || 0)}
+          coins={sessionCompletionData.coins || 0}
+          onRetry={handleRetry}
+          onBack={restartEntireGame}
         />
       )}
 

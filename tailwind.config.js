@@ -22,7 +22,7 @@ export default {
         }
       },
       fontFamily: {
-        arabic: ['Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
+        arabic: ['Lateef', 'Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
       },
       animation: {
         'pop': 'pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
