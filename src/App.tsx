@@ -780,12 +780,8 @@ export const App: React.FC = () => {
 
       {/* Submitting Answers & Completing Session Overlay */}
       {isSubmittingFinal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-pop select-none font-arabic">
-          <div className="p-8 rounded-3xl bg-slate-900 border border-white/20 text-white flex flex-col items-center gap-4 text-center max-w-sm shadow-2xl">
-            <Loader2 className="w-12 h-12 text-blue-400 animate-spin" />
-            <h3 className="text-xl font-black">جاري إنهاء الجلسة...</h3>
-            <p className="text-sm text-slate-300">يتم الآن تسجيل النتائج واحتساب النجوم والمكافآت</p>
-          </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 select-none">
+          <Loader2 className="w-16 h-16 text-blue-400 animate-spin" />
         </div>
       )}
 
