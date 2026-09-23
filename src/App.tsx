@@ -274,7 +274,13 @@ export const App: React.FC = () => {
           setSessionCompletionData(completeRes.data);
           
           const correctCount = accumulatedAnswersRef.current.filter(
-            (a) => a.selectedAnswer !== 'خاطئ' && a.selectedAnswer !== 'none'
+            (a, idx) => {
+              if (a.selectedAnswer === 'خاطئ' || a.selectedAnswer === 'none') return false;
+              if (apiQuestions.length > 0 && apiQuestions[idx]) {
+                return a.selectedAnswer === apiQuestions[idx].correctAnswer;
+              }
+              return true;
+            }
           ).length;
           
           if (correctCount > 0) {
@@ -290,7 +296,13 @@ export const App: React.FC = () => {
         console.error('Error submitting/completing session:', err);
         // Fallback local results so user isn't stuck
         const correctCount = accumulatedAnswersRef.current.filter(
-          (a) => a.selectedAnswer !== 'خاطئ' && a.selectedAnswer !== 'none'
+          (a, idx) => {
+            if (a.selectedAnswer === 'خاطئ' || a.selectedAnswer === 'none') return false;
+            if (apiQuestions.length > 0 && apiQuestions[idx]) {
+              return a.selectedAnswer === apiQuestions[idx].correctAnswer;
+            }
+            return true;
+          }
         ).length;
         const total = Math.max(1, totalRounds);
         const percentage = Math.round((correctCount / total) * 100);
@@ -319,7 +331,13 @@ export const App: React.FC = () => {
 
     // 2. Demo Mode
     const correctCount = accumulatedAnswersRef.current.filter(
-      (a) => a.selectedAnswer !== 'خاطئ' && a.selectedAnswer !== 'none'
+      (a, idx) => {
+        if (a.selectedAnswer === 'خاطئ' || a.selectedAnswer === 'none') return false;
+        if (apiQuestions.length > 0 && apiQuestions[idx]) {
+          return a.selectedAnswer === apiQuestions[idx].correctAnswer;
+        }
+        return true;
+      }
     ).length;
     const total = Math.max(1, totalRounds);
     const percentage = Math.round((correctCount / total) * 100);
@@ -780,17 +798,29 @@ export const App: React.FC = () => {
         />
       )}
 
-      {showResults && sessionCompletionData && (
-        <ResultsPanel
-          score={sessionCompletionData.score || 0}
-          totalScore={totalRounds * 20}
-          correctAnswers={Math.round((sessionCompletionData.percentage / 100) * totalRounds) || 0}
-          wrongAnswers={totalRounds - (Math.round((sessionCompletionData.percentage / 100) * totalRounds) || 0)}
-          coins={sessionCompletionData.coins || 0}
-          onRetry={handleRetry}
-          onBack={restartEntireGame}
-        />
-      )}
+      {showResults && sessionCompletionData && (() => {
+        const correctCount = accumulatedAnswersRef.current.filter((a, idx) => {
+          if (a.selectedAnswer === 'خاطئ' || a.selectedAnswer === 'none') return false;
+          if (apiQuestions.length > 0 && apiQuestions[idx]) {
+            return a.selectedAnswer === apiQuestions[idx].correctAnswer;
+          }
+          return true;
+        }).length;
+        const wrongCount = Math.max(0, totalRounds - correctCount);
+        const computedScore = correctCount * 20;
+
+        return (
+          <ResultsPanel
+            score={computedScore}
+            totalScore={totalRounds * 20}
+            correctAnswers={correctCount}
+            wrongAnswers={wrongCount}
+            coins={sessionCompletionData.coins || 0}
+            onRetry={handleRetry}
+            onBack={restartEntireGame}
+          />
+        );
+      })()}
 
       {/* Optional Category and Custom Words Modals in Demo Mode */}
       {isCategoryModalOpen && (
