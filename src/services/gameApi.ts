@@ -11,6 +11,9 @@ export interface ApiQuestion {
   points: number;
   timeLimit: number;
   order: number;
+  hint?: string;
+  audioUrl?: string | null;
+  imageUrl?: string | null;
 }
 
 export interface QuestionsApiResponse {

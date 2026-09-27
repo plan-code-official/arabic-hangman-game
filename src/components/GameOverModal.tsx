@@ -1,7 +1,5 @@
 import React, { useEffect } from 'react';
-import confetti from 'canvas-confetti';
 import type { WordItem } from '../types/game';
-import { Trophy, Frown, ArrowRight } from 'lucide-react';
 
 interface GameOverModalProps {
   status: 'won' | 'lost';
@@ -21,20 +19,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 }) => {
   const isWon = status === 'won';
 
-  useEffect(() => {
-    if (isWon) {
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#ff7828', '#f59e0b', '#10b981', '#38bdf8', '#a855f7'],
-        });
-      } catch {
-        // Confetti fallback
-      }
-    }
-  }, [isWon]);
+
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -49,28 +34,27 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   }, [isLastQuestion, onFinishSession, onNextWord]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-pop">
-      <div className="relative w-full max-w-sm bg-[#181832] border-2 border-[#373764] rounded-3xl p-8 shadow-2xl flex flex-col items-center text-center">
-        <div
-          className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 shadow-lg ${
-            isWon
-              ? 'bg-emerald-500/20 text-emerald-400 border-2 border-emerald-500/50 shadow-emerald-500/30'
-              : 'bg-rose-500/20 text-rose-400 border-2 border-rose-500/50 shadow-rose-500/30'
-          }`}
-        >
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-pop select-none pointer-events-none">
+      <div 
+        dir="rtl"
+        className={`px-10 py-5 sm:px-14 sm:py-6 rounded-3xl shadow-[0_15px_50px_rgba(0,0,0,0.5)] border-[3px] flex items-center justify-center transition-all duration-300 scale-110 ${
+          isWon 
+            ? 'bg-[#38A169] border-[#48BB78]/50 shadow-green-900/50' 
+            : 'bg-[#E53E3E] border-[#F56565]/50 shadow-red-900/50'
+        }`}
+      >
+        <h2 className="text-white text-5xl sm:text-6xl font-black drop-shadow-lg tracking-wide mb-0 flex items-center gap-3">
           {isWon ? (
-            <Trophy className="w-10 h-10 animate-bounce-short" />
+            <>
+              <span>أحسنت!</span>
+              <span className="text-4xl sm:text-5xl">✔</span>
+            </>
           ) : (
-            <Frown className="w-10 h-10 animate-shake" />
+            <>
+              <span>خطأ</span>
+              <span className="text-4xl sm:text-5xl">✖</span>
+            </>
           )}
-        </div>
-
-        <h2
-          className={`text-5xl font-black ${
-            isWon ? 'text-emerald-400' : 'text-rose-400'
-          }`}
-        >
-          {isWon ? 'أحسنت' : 'أخطأت'}
         </h2>
       </div>
     </div>

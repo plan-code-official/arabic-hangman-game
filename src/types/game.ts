@@ -15,6 +15,7 @@ export interface WordItem {
   categoryNameAr: string;
   imageUrl: string; // Direct image URL or inline SVG / Unsplash URL
   hint?: string; // Optional clue
+  audioUrl?: string; // Optional audio clue
 }
 
 export interface GameStats {

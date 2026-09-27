@@ -1,67 +1,97 @@
 .welcome-screen-new {
   direction: rtl;
   background: radial-gradient(circle at center, #113645, #08171d);
-  min-height: 100vh;
-  width: 100%;
+  height: 100vh; /* Changed to height to prevent scrolling */
+  max-height: 100vh;
+  width: 100vw;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   position: relative;
-  overflow: hidden;
+  overflow: hidden; /* Prevents scrolling */
+  padding: clamp(0.5rem, 2vh, 2rem) clamp(0.5rem, 3vw, 2.5rem);
+  box-sizing: border-box;
+  touch-action: none; /* Explicitly prevents mobile pull-to-refresh and scroll */
 }
 
-.welcome-header {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-size: 100% 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-  padding: 10px 25px;
-  /* To ensure the inner contents are aligned correctly */
+.welcome-top-bar {
+  width: 100%;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 180px;
-  min-height: 60px;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-top: clamp(0.2rem, 1vh, 1rem);
+  z-index: 10;
+}
+
+.welcome-exit-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.2s ease;
+  width: clamp(2rem, 10vw, 4rem);
+  height: clamp(2rem, 10vw, 4rem);
+  flex-shrink: 0; /* Keeps its shape */
+}
+
+.welcome-exit-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.welcome-exit-btn:hover {
+  transform: scale(1.1);
 }
 
 .welcome-stats-bg {
+  background-size: 100% 100%;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: clamp(140px, 40vw, 300px);
+  min-height: clamp(45px, 9vh, 85px);
+  padding: clamp(0.2rem, 1vh, 0.8rem) clamp(0.5rem, 1.5vw, 1.5rem);
+  flex-shrink: 1; /* Allows shrinking on tiny screens if needed */
+}
+
+.stats-equation {
   direction: ltr; /* Mandatory to keep QuestionCoin on left and GoldCoin on right */
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-weight: bold;
+  gap: clamp(4px, 1vw, 12px);
   color: white;
   width: 100%;
+  font-weight: 800;
 }
 
 .stat-icon {
-  width: 28px;
-  height: 28px;
+  width: clamp(18px, 6vw, 36px);
+  height: clamp(18px, 6vw, 36px);
   object-fit: contain;
 }
 
 .stat-icon.gold-coin {
-  width: 32px;
-  height: 32px;
+  width: clamp(20px, 7vw, 40px);
+  height: clamp(20px, 7vw, 40px);
 }
 
 .stat-value {
-  font-size: 1.4rem;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+  font-size: clamp(1rem, 3.5vw, 2rem);
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
 }
 
 .stat-separator {
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: clamp(1.2rem, 4vw, 2.2rem);
 }
 
 .xp-value {
-  color: #FFD700; /* Yellow for XP */
+  color: #FFD700;
 }
 
 .welcome-body {
@@ -69,21 +99,37 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
   width: 100%;
+  padding: clamp(0.5rem, 2vh, 2rem) 0;
   z-index: 1;
+  min-height: 0; /* Crucial: Allows flex child to shrink properly instead of overflowing */
 }
 
 .description-img {
   max-width: 100%;
-  width: 600px; /* Constraint for responsiveness */
+  max-height: 100%; /* Ensures it shrinks vertically if space is tight */
+  width: clamp(220px, 85vw, 700px);
   height: auto;
   object-fit: contain;
 }
 
 .welcome-footer {
-  padding-bottom: 50px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
   z-index: 1;
+  margin-bottom: clamp(0.5rem, 2vh, 2rem);
+}
+
+.welcome-error {
+  color: #ff4d4d;
+  font-size: clamp(1rem, 3.5vw, 1.8rem);
+  font-weight: bold;
+  background: rgba(0,0,0,0.6);
+  padding: clamp(0.6rem, 1.5vh, 1.2rem) clamp(1rem, 3vw, 2.5rem);
+  border-radius: 12px;
+  border: 2px solid #ff4d4d;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .start-button {
@@ -94,42 +140,26 @@
   border: none;
   cursor: pointer;
   color: white;
-  font-size: 2.2rem;
   font-weight: 900;
-  width: 280px;
-  height: 110px;
+  font-size: clamp(1.5rem, 6vw, 3.2rem);
+  width: clamp(180px, 60vw, 400px);
+  height: clamp(65px, 20vw, 150px);
   display: flex;
   align-items: center;
   justify-content: center;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-  transition: transform 0.2s ease;
-  padding-bottom: 15px; /* Slightly extra padding-bottom to vertically center text */
+  text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  transition: transform 0.2s ease, filter 0.2s ease;
+  padding-bottom: clamp(8px, 2.5vw, 22px);
   font-family: inherit;
 }
 
 .start-button:hover:not(:disabled) {
   transform: scale(1.05);
+  filter: brightness(1.1);
 }
 
 .start-button:disabled {
-  opacity: 0.7;
+  opacity: 0.6;
   cursor: not-allowed;
   filter: grayscale(0.5);
-}
-
-@media (max-width: 768px) {
-  .welcome-screen-new {
-    justify-content: space-evenly;
-  }
-
-  .welcome-header {
-    position: relative;
-    top: 0;
-    right: 0;
-    margin-top: 30px;
-  }
-
-  .welcome-body {
-    flex: none;
-  }
 }

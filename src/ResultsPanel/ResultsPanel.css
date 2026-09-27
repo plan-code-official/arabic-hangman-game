@@ -54,6 +54,17 @@
   animation: resultsItemIn 440ms 120ms ease-out both;
 }
 
+.results-panel__title-text {
+  display: block;
+  font-family: Cairo, sans-serif;
+  font-size: clamp(1.2rem, 5.5vw, 4.5rem);
+  font-weight: 900;
+  color: #ff5d5c;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 20px rgba(255, 93, 92, 0.4);
+  margin-top: clamp(40px, 6vh, 70px);
+  animation: resultsItemIn 440ms 120ms ease-out both;
+}
+
 .results-score-card, .results-stat-card {
   box-sizing: border-box;
   background: rgba(21, 64, 83, 0.77);
@@ -96,16 +107,17 @@
 .results-stats {
   width: 100%;
   max-width: min(90%, 820px);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
   gap: clamp(10px, 2vw, 32px);
   direction: ltr;
   animation: resultsItemIn 510ms 270ms ease-out both;
 }
 
 .results-stat-card {
-  width: min(100%, 240px);
-  justify-self: center;
+  width: clamp(100px, 31%, 240px);
+  flex-shrink: 1;
   min-height: 0;
   aspect-ratio: 1 / 1.05;
   border-radius: clamp(18px, 3vw, 44px);
@@ -119,16 +131,16 @@
 .results-stat-card img {
   display: block;
   width: auto;
-  height: 86%;
+  height: 42%;
   max-width: 88%;
-  max-height: none;
+  max-height: 55px;
   object-fit: contain;
   align-self: end;
 }
 
 .results-stat-card strong {
   font-family: Cairo, sans-serif;
-  font-size: clamp(1.75rem, 4.4vw, 3.65rem);
+  font-size: clamp(0.9rem, 4vw, 3rem);
   line-height: 1;
   font-weight: 900;
 }
@@ -137,7 +149,7 @@
   margin-top: clamp(2px, 0.8vh, 8px);
   color: #f9d00f;
   font-family: Cairo, sans-serif;
-  font-size: clamp(1rem, 2.7vw, 2.1rem);
+  font-size: clamp(0.7rem, 2.5vw, 1.8rem);
   font-weight: 900;
   line-height: 1;
 }
@@ -145,7 +157,7 @@
 .results-stat-card--correct strong { color: #63ff5d; }
 .results-stat-card--wrong strong { color: #ff5d5c; }
 .results-stat-card--coins strong { color: #f9d00f; }
-.results-stat-card--coins img { height: 90%; max-width: 96%; }
+.results-stat-card--coins img { height: 42%; max-width: 96%; max-height: 55px; }
 .results-stat-card--coins { direction: rtl; }
 
 .results-actions {
@@ -175,7 +187,7 @@
   transition: transform 180ms ease, filter 180ms ease;
 }
 
-.results-action img {
+.results-action__bg {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -202,9 +214,15 @@
   direction: rtl;
 }
 
-.results-action__exit-icon {
-  font-family: sans-serif;
-  line-height: 1;
+.results-action__exit-icon,
+.results-action__retry-icon {
+  width: 1.2em;
+  height: 1.2em;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+  margin-inline: 0.2em;
+  vertical-align: middle;
 }
 
 .results-action--back { color: #ff5d5c; }
