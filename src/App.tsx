@@ -105,6 +105,8 @@ export const App: React.FC = () => {
   const [guessedLetters, setGuessedLetters] = useState<Set<string>>(new Set());
   const [gameStatus, setGameStatus] = useState<'playing' | 'won' | 'lost'>('playing');
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [isQuestionAudioPlaying, setIsQuestionAudioPlaying] = useState(false);
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Convert ApiQuestion to WordItem
   const mapApiQuestionToWordItem = useCallback((q: ApiQuestion): WordItem => {
@@ -114,7 +116,7 @@ export const App: React.FC = () => {
     );
     // 2. Try any option that has an image
     const anyImageOption = q.options?.find((opt) => opt.imageUrl);
-    
+
     // Prioritize top-level imageUrl from question
     const imageUrl = q.imageUrl || matchingOption?.imageUrl || anyImageOption?.imageUrl || DEFAULT_FALLBACK_IMAGE;
 
@@ -125,7 +127,7 @@ export const App: React.FC = () => {
       categoryNameAr: lessonTitle || 'سؤال الدرس',
       imageUrl,
       hint: q.question || undefined,
-      audioUrl: q.audioUrl || undefined,
+      audioUrl: q.audioUrl || matchingOption?.audioUrl || anyImageOption?.audioUrl || undefined,
     };
   }, [lessonTitle]);
 
@@ -637,10 +639,10 @@ export const App: React.FC = () => {
 
         {/* TOP BAR: Glassy Header */}
         <header dir="rtl" className="w-full max-w-5xl mx-auto flex flex-col items-center pt-1 px-1 sm:px-4 shrink-0">
-          <div 
+          <div
             className="w-full rounded-[1.5rem] shadow-xl flex flex-col relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/20"
           >
-            
+
             <div className="p-3 sm:p-4 flex items-center justify-between w-full">
               {/* Right side (RTL Context): Exit Button */}
               <button
@@ -687,7 +689,7 @@ export const App: React.FC = () => {
             </div>
 
             {/* Right: TURNS CARD (Top Right Corner) */}
-            <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-40 pointer-events-auto">
+            {/* <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-40 pointer-events-auto">
               <div
                 className="w-[clamp(4rem,15vw,6rem)] rounded-xl sm:rounded-2xl bg-black/45 border-2 border-white/30 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_10px_20px_rgba(0,0,0,0.4)] p-1.5 sm:p-2 lg:p-3 flex flex-col items-center justify-center backdrop-blur-[40px]"
                 style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
@@ -699,14 +701,14 @@ export const App: React.FC = () => {
                   {remainingAttempts}
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Center Section: Question & Word Slots (Bottom on Mobile, Center on Desktop) */}
             <div className="w-full lg:flex-1 order-3 lg:order-2 flex flex-col items-center justify-center text-center gap-1 sm:gap-3 pointer-events-auto z-20 min-w-0 mt-2 lg:mt-0 px-1 lg:px-4">
               {currentWordItem && (
                 <>
                   {/* Rich Text Question Container */}
-                  <div 
+                  <div
                     className="w-full max-w-3xl min-h-[clamp(4rem,10vh,8rem)] flex flex-col items-center justify-center p-2 sm:p-4 mx-auto shrink transition-all overflow-visible gap-3 sm:gap-4"
                     onClick={(e) => {
                       if ((e.target as HTMLElement).tagName === 'IMG') {
@@ -716,11 +718,15 @@ export const App: React.FC = () => {
                   >
                     {/* 1. Audio (if provided) */}
                     {currentWordItem.audioUrl && (
-                      <audio 
-                        src={currentWordItem.audioUrl} 
-                        controls 
-                        className="w-full max-w-xs sm:max-w-sm rounded-full shadow-lg" 
-                      />
+                      <button type="button" aria-label="تشغيل صوت السؤال" className={`question-audio-button ${isQuestionAudioPlaying ? 'is-playing' : ''}`} onClick={() => {
+                        if (!questionAudioRef.current) questionAudioRef.current = new Audio(currentWordItem.audioUrl!);
+                        questionAudioRef.current.src = currentWordItem.audioUrl!;
+                        questionAudioRef.current.currentTime = 0;
+                        questionAudioRef.current.onended = () => setIsQuestionAudioPlaying(false);
+                        questionAudioRef.current.play().then(() => setIsQuestionAudioPlaying(true)).catch(() => setIsQuestionAudioPlaying(false));
+                      }}>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l4 3V7l-4 3H4Z" /><path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" /></svg>
+                      </button>
                     )}
 
                     {/* 2. Image (if provided or as fallback if nothing else exists) */}
@@ -735,8 +741,8 @@ export const App: React.FC = () => {
 
                     {/* 3. Text/HTML (if provided) */}
                     {currentWordItem.hint && (
-                      <div 
-                        className="w-full flex flex-col items-center justify-center text-white text-xl sm:text-2xl md:text-3xl font-black tracking-wide drop-shadow-md gap-2 [&_img]:max-w-full [&_img]:max-h-[140px] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0 text-center"
+                      <div
+                        className="w-full flex flex-col items-center justify-center text-white text-[clamp(1.5rem,5vw,3rem)] font-black tracking-wide drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] gap-2 [&_img]:max-w-full [&_img]:max-h-[140px] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0 text-center"
                         dangerouslySetInnerHTML={{ __html: currentWordItem.hint }}
                       />
                     )}
@@ -849,14 +855,14 @@ export const App: React.FC = () => {
 
       {/* MODAL 3: Zoomed Image Viewer */}
       {zoomedImage && (
-        <div 
+        <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-pop cursor-pointer"
           onClick={() => setZoomedImage(null)}
         >
           <div className="relative max-w-3xl w-full flex justify-center items-center">
-            <img 
-              src={zoomedImage} 
-              alt="صورة مكبرة" 
+            <img
+              src={zoomedImage}
+              alt="صورة مكبرة"
               className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border-2 border-white/20"
             />
             <div className="absolute -top-10 text-white font-bold tracking-widest animate-pulse">

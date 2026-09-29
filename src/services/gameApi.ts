@@ -1,6 +1,7 @@
 export interface QuestionOption {
   text: string;
   imageUrl: string | null;
+  audioUrl?: string | null;
 }
 
 export interface ApiQuestion {

@@ -34,20 +34,18 @@ export const WordSlots: React.FC<WordSlotsProps> = ({
           return (
             <div
               key={index}
-              className={`w-[clamp(1.8rem,5vw,2.8rem)] h-[clamp(2.2rem,6vw,3.2rem)] rounded-lg sm:rounded-xl bg-[#2563eb] border-2 border-white/40 shadow-md shadow-blue-600/30 flex items-center justify-center text-center transition-all duration-300 ${
-                showLetter ? 'animate-pop' : ''
-              }`}
+              className={`w-[clamp(2.4rem,7vw,3.5rem)] h-[clamp(3rem,9vw,5rem)] rounded-lg sm:rounded-xl bg-[#2563eb] border-2 border-white/40 shadow-lg shadow-blue-600/40 flex items-center justify-center text-center transition-all duration-300 ${showLetter ? 'animate-pop' : ''
+                }`}
             >
               {showLetter ? (
                 <span
-                  className={`text-[clamp(1rem,4vw,1.8rem)] font-black text-white ${
-                    !isGuessed && revealAll ? 'text-rose-200' : ''
-                  }`}
+                  className={`text-[clamp(1.5rem,5.5vw,2.5rem)] font-black text-white drop-shadow-md ${!isGuessed && revealAll ? 'text-rose-200' : ''
+                    }`}
                 >
                   {char}
                 </span>
               ) : (
-                <span className="invisible text-[clamp(1rem,4vw,1.8rem)] font-black">
+                <span className="invisible text-[clamp(1.5rem,5.5vw,2.5rem)] font-black">
                   {char}
                 </span>
               )}
