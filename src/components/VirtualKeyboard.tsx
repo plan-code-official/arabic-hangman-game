@@ -61,7 +61,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
                 type="button"
                 onClick={() => onKeyPress(letter)}
                 disabled={disabled || isGuessed}
-                className={`w-[clamp(1.2rem,8vw,2.5rem)] h-[clamp(1.5rem,6vh,2.5rem)] sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-lg sm:rounded-xl font-black text-[clamp(1rem,4vw,1.5rem)] sm:text-xl md:text-2xl flex items-center justify-center transition-all duration-150 cursor-pointer ${btnClass} ${
+                className={`w-[clamp(1.5rem,8.2vw,2.75rem)] h-[clamp(2.1rem,5vh,3.1rem)] sm:w-12 sm:h-12 md:w-13 md:h-13 rounded-lg sm:rounded-xl font-black text-[clamp(1.15rem,4.5vw,1.75rem)] sm:text-2xl md:text-3xl flex items-center justify-center transition-all duration-150 cursor-pointer select-none leading-none ${btnClass} ${
                   disabled ? 'opacity-50 pointer-events-none' : ''
                 }`}
               >

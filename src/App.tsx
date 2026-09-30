@@ -627,7 +627,7 @@ export const App: React.FC = () => {
   // RENDER: Main Game Screen
   // -------------------------------------------------------------
   return (
-    <div className="relative h-[100dvh] landscape:h-auto landscape:min-h-[100dvh] w-full flex flex-col justify-between overflow-hidden landscape:overflow-y-auto selection:bg-blue-600 selection:text-white font-arabic select-none no-scrollbar">
+    <div className="relative h-[100dvh] max-h-[100dvh] w-full flex flex-col justify-between overflow-hidden selection:bg-blue-600 selection:text-white font-arabic select-none no-scrollbar">
       {/* 1. Fullscreen Wallpaper: Futuristic City & Daylight */}
       <div
         className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
@@ -635,42 +635,44 @@ export const App: React.FC = () => {
       />
 
       {/* 2. Main Game UI Layer */}
-      <div className="relative z-10 w-full h-full landscape:h-auto landscape:min-h-[100dvh] flex flex-col justify-between p-1 sm:p-3 md:p-6 overflow-hidden landscape:overflow-visible">
+      <div className="relative z-10 w-full h-full max-h-[100dvh] flex flex-col justify-between p-1 sm:p-2 md:p-3 overflow-hidden">
 
         {/* TOP BAR: Glassy Header */}
-        <header dir="rtl" className="w-full max-w-5xl mx-auto flex flex-col items-center pt-1 px-1 sm:px-4 shrink-0">
+        <header dir="rtl" className="w-full max-w-5xl mx-auto flex flex-col items-center pt-0.5 sm:pt-1 px-1 sm:px-4 shrink-0">
           <div
-            className="w-full rounded-[1.5rem] shadow-xl flex flex-col relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/20"
+            className="w-full rounded-[1.25rem] sm:rounded-[1.5rem] shadow-xl flex flex-col relative overflow-hidden bg-black/40 backdrop-blur-xl border border-white/20"
           >
 
-            <div className="p-3 sm:p-4 flex items-center justify-between w-full">
+            <div className="py-1 px-2.5 sm:py-2.5 sm:px-4 flex items-center justify-between w-full">
               {/* Right side (RTL Context): Exit Button */}
               <button
                 type="button"
                 onClick={() => window.history.back()}
-                className="w-12 h-12 sm:w-14 sm:h-14 bg-[#f8f9fa] hover:bg-white transition-colors rounded-[1rem] flex items-center justify-center shadow-lg active:scale-95"
+                className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-[#f8f9fa] hover:bg-white transition-colors rounded-[0.85rem] sm:rounded-[1rem] flex items-center justify-center shadow-lg active:scale-95 shrink-0"
                 aria-label="خروج"
               >
-                <img src={exitIcon} alt="Exit" className="w-7 h-7 sm:w-8 sm:h-8" />
+                <img src={exitIcon} alt="Exit" className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8" />
               </button>
 
               {/* Center: Question Info */}
-              <div className="flex flex-col items-center justify-center -mt-1">
-                <span className="text-white text-xl sm:text-2xl font-black drop-shadow-md mb-0">السؤال</span>
-                <span className="text-white font-black text-xl sm:text-2xl drop-shadow-md tracking-wider">
+              <div className="flex flex-col items-center justify-center leading-none text-center">
+                <span className="text-white text-[clamp(1.75rem,4.5vw,2.75rem)] font-black drop-shadow-[0_2px_8px_rgba(0,0,0,0.7)] tracking-wide mb-0.5">
+                  السؤال
+                </span>
+                <span className="text-white/90 font-black text-sm sm:text-base md:text-xl drop-shadow-md tracking-wider">
                   {roundIndex + 1}/{totalRounds}
                 </span>
               </div>
 
               {/* Left side (RTL Context): Coins Pill */}
-              <div dir="ltr" className="flex items-center justify-center bg-transparent border border-white/40 rounded-[2rem] py-1.5 px-4 gap-2 shadow-inner">
-                <img src={daddcoinImg} alt="Coins" className="w-8 h-8 sm:w-10 sm:h-10 drop-shadow-md" />
-                <span className="text-white font-black text-xl sm:text-2xl pt-1">{stats.coins}</span>
+              <div dir="ltr" className="flex items-center justify-center bg-transparent border border-white/40 rounded-[2rem] py-1 sm:py-1.5 px-2.5 sm:px-4 gap-1.5 sm:gap-2 shadow-inner shrink-0">
+                <img src={daddcoinImg} alt="Coins" className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 drop-shadow-md" />
+                <span className="text-white font-black text-base sm:text-xl md:text-2xl pt-0.5">{stats.coins}</span>
               </div>
             </div>
 
             {/* Long Horizontal Progress Bar Perfectly Touching the Header Bottom */}
-            <div className="w-full h-2 sm:h-2.5 bg-black/20 border-t border-white/30 p-[1px]">
+            <div className="w-full h-1.5 sm:h-2 bg-black/20 border-t border-white/30 p-[1px]">
               <div
                 className="h-full transition-all duration-500 shadow-md rounded-r-full"
                 style={{ width: `${((roundIndex + 1) / totalRounds) * 100}%`, backgroundColor: '#71D9FF' }}
@@ -679,37 +681,22 @@ export const App: React.FC = () => {
           </div>
         </header>
 
-        {/* UPPER MAIN CARD: [Robot (Left)] | [Clue Image + Clue Text + Word Slots (DEAD CENTER)] | [Turns Counter] */}
-        <main dir="ltr" className="w-full max-w-6xl mx-auto my-auto px-1 sm:px-10 md:px-14 lg:px-20 py-1 sm:py-4 flex-1 min-h-0 flex flex-col justify-center">
-          <div className="relative w-full h-full min-h-0 flex-1 rounded-[1.5rem] sm:rounded-[3rem] bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-3xl border-2 border-white/70 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(255,255,255,0.2),0_25px_60px_rgba(15,23,42,0.14)] p-2 sm:p-4 lg:p-8 flex flex-row flex-wrap lg:flex-nowrap items-center justify-between gap-2 sm:gap-4 lg:gap-0 overflow-visible">
+        {/* UPPER MAIN CARD: [Robot (Left)] | [Clue Image + Clue Text + Word Slots (DEAD CENTER)] */}
+        <main dir="ltr" className="w-full max-w-6xl mx-auto my-auto px-1 sm:px-4 md:px-8 lg:px-12 py-0.5 sm:py-1.5 flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
+          <div className="relative w-full h-full min-h-0 flex-1 rounded-[1.25rem] sm:rounded-[2.5rem] bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-3xl border-2 border-white/70 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(255,255,255,0.2),0_25px_60px_rgba(15,23,42,0.14)] p-1.5 sm:p-3 lg:p-6 flex flex-row flex-wrap lg:flex-nowrap items-center justify-between gap-1 sm:gap-3 lg:gap-0 overflow-hidden">
 
             {/* Left Section: Monster (Top Left on Mobile, Left on Desktop) */}
-            <div className="flex-shrink-0 z-10 order-1 lg:order-1 flex items-center justify-start lg:justify-center pointer-events-none w-1/2 lg:w-auto">
+            <div className="flex-shrink-0 z-10 order-1 lg:order-1 flex items-center justify-start lg:justify-center pointer-events-none w-1/3 lg:w-auto">
               <HangmanDisplay wrongGuessesCount={wrongGuessesCount} />
             </div>
 
-            {/* Right: TURNS CARD (Top Right Corner) */}
-            {/* <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-40 pointer-events-auto">
-              <div
-                className="w-[clamp(4rem,15vw,6rem)] rounded-xl sm:rounded-2xl bg-black/45 border-2 border-white/30 shadow-[inset_0_1px_2px_rgba(255,255,255,0.3),0_10px_20px_rgba(0,0,0,0.4)] p-1.5 sm:p-2 lg:p-3 flex flex-col items-center justify-center backdrop-blur-[40px]"
-                style={{ backdropFilter: 'blur(40px)', WebkitBackdropFilter: 'blur(40px)' }}
-              >
-                <span className="text-white font-black text-xs sm:text-sm lg:text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.4)] mb-0.5 sm:mb-1 tracking-wide">
-                  Turns
-                </span>
-                <div className="w-7 h-7 sm:w-9 sm:h-9 lg:w-11 lg:h-11 rounded-full bg-[#2563eb] border-2 border-white/80 flex items-center justify-center text-white font-black text-sm sm:text-base lg:text-xl shadow-[0_4px_10px_rgba(37,99,235,0.5)]">
-                  {remainingAttempts}
-                </div>
-              </div>
-            </div> */}
-
             {/* Center Section: Question & Word Slots (Bottom on Mobile, Center on Desktop) */}
-            <div className="w-full lg:flex-1 order-3 lg:order-2 flex flex-col items-center justify-center text-center gap-1 sm:gap-3 pointer-events-auto z-20 min-w-0 mt-2 lg:mt-0 px-1 lg:px-4">
+            <div className="w-full lg:flex-1 order-3 lg:order-2 flex flex-col items-center justify-center text-center gap-1 sm:gap-2 pointer-events-auto z-20 min-w-0 mt-0 lg:mt-0 px-1 lg:px-4">
               {currentWordItem && (
                 <>
                   {/* Rich Text Question Container */}
                   <div
-                    className="w-full max-w-3xl min-h-[clamp(4rem,10vh,8rem)] flex flex-col items-center justify-center p-2 sm:p-4 mx-auto shrink transition-all overflow-visible gap-3 sm:gap-4"
+                    className="w-full max-w-3xl flex flex-col items-center justify-center p-1 sm:p-2 mx-auto shrink transition-all gap-1 sm:gap-2"
                     onClick={(e) => {
                       if ((e.target as HTMLElement).tagName === 'IMG') {
                         setZoomedImage((e.target as HTMLImageElement).src);
@@ -734,7 +721,7 @@ export const App: React.FC = () => {
                       <img
                         src={currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE ? currentWordItem.imageUrl : bgImage}
                         alt="سؤال"
-                        className="max-w-full max-h-[140px] sm:max-h-[180px] object-contain rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.4)] border border-white/20 cursor-zoom-in transition-transform hover:scale-105"
+                        className="max-w-full max-h-[clamp(65px,11vh,140px)] object-contain rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.4)] border border-white/20 cursor-zoom-in transition-transform hover:scale-105"
                         onClick={(e) => setZoomedImage((e.target as HTMLImageElement).src)}
                       />
                     )}
@@ -742,7 +729,7 @@ export const App: React.FC = () => {
                     {/* 3. Text/HTML (if provided) */}
                     {currentWordItem.hint && (
                       <div
-                        className="w-full flex flex-col items-center justify-center text-white text-[clamp(1.5rem,5vw,3rem)] font-black tracking-wide drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] gap-2 [&_img]:max-w-full [&_img]:max-h-[140px] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0 text-center"
+                        className="w-full flex flex-col items-center justify-center text-white text-[clamp(1.4rem,4vw,2.5rem)] font-black tracking-wide drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)] gap-1 [&_img]:max-w-full [&_img]:max-h-[clamp(60px,11vh,120px)] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0 text-center"
                         dangerouslySetInnerHTML={{ __html: currentWordItem.hint }}
                       />
                     )}
@@ -764,8 +751,8 @@ export const App: React.FC = () => {
         </main>
 
         {/* BOTTOM SECTION: Keyboard centered with ultra-glassy card & shadow */}
-        <footer className="w-full max-w-5xl mx-auto flex items-center justify-center px-1 sm:px-4 pb-1 sm:pb-3 shrink-0 mt-1">
-          <div className="w-full max-w-xl md:max-w-2xl mx-auto rounded-[1.5rem] bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-3xl border border-white/60 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(255,255,255,0.2),0_20px_50px_rgba(15,23,42,0.12)] p-2 sm:p-5 flex flex-col items-center justify-center min-h-0">
+        <footer className="w-full max-w-5xl mx-auto flex items-center justify-center px-1 sm:px-4 pb-0.5 sm:pb-2 shrink-0 mt-0.5">
+          <div className="w-full max-w-xl md:max-w-2xl mx-auto rounded-[1.25rem] sm:rounded-[1.5rem] bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-3xl border border-white/60 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(255,255,255,0.2),0_20px_50px_rgba(15,23,42,0.12)] p-1.5 sm:p-3 flex flex-col items-center justify-center min-h-0">
             {currentWordItem && (
               <VirtualKeyboard
                 onKeyPress={handleGuess}

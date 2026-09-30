@@ -27,13 +27,13 @@ export const HangmanDisplay: React.FC<HangmanDisplayProps> = ({
     <div className="relative flex items-center justify-center">
       {/* Floating Robot / Monster Assembly */}
       <div
-        className={`relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-52 lg:h-52 xl:w-58 xl:h-58 aspect-square flex items-center justify-center transition-all duration-300 ${
+        className={`relative w-20 h-20 sm:w-30 sm:h-30 md:w-38 md:h-38 lg:w-48 lg:h-48 xl:w-54 xl:h-54 aspect-square flex items-center justify-center transition-all duration-300 ${
           wrongGuessesCount > 0 ? 'animate-float' : ''
         }`}
       >
         {wrongGuessesCount === 0 ? (
           /* Subtle dormant aura when 0 mistakes */
-          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-dashed border-cyan-400/30 flex items-center justify-center opacity-40">
+          <div className="w-16 h-16 sm:w-22 sm:h-22 rounded-full border border-dashed border-cyan-400/30 flex items-center justify-center opacity-40">
             <div className="w-8 h-8 rounded-full bg-cyan-400/10 blur-[2px]" />
           </div>
         ) : (
