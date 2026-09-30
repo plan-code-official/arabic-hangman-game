@@ -52,6 +52,13 @@ export class ResultsPanel {
     this.titleText.textContent = "حاول مرة أخرى!";
     this.titleText.style.display = "none";
 
+    const gradeCard = document.createElement("div");
+    gradeCard.className = "results-grade";
+    const gradeLabel = document.createElement("span");
+    gradeLabel.textContent = "الدَّرَجَة";
+    this.gradeText = document.createElement("strong");
+    gradeCard.append(gradeLabel, this.gradeText);
+
     const stats = document.createElement("div");
     stats.className = "results-stats";
     stats.setAttribute("aria-label", "إحصاءات الأداء");
@@ -83,7 +90,7 @@ export class ResultsPanel {
     wrongCard.append(wrongImg, this.wrongText);
 
     stats.append(correctCard, coinsCard, wrongCard);
-    content.append(this.titleImg, this.titleText, stats);
+    content.append(this.titleImg, this.titleText, gradeCard, stats);
     panel.append(content);
 
     const actions = document.createElement("div");
@@ -124,6 +131,7 @@ export class ResultsPanel {
 
     // Toggle Title Image based on 50% threshold
     const totalQuestions = correct + wrong;
+    const correctPercent = totalQuestions ? Math.round((correct / totalQuestions) * 100) : 0;
     const isMoreThanHalf = totalQuestions > 0 && (correct / totalQuestions) >= 0.5;
     this.titleImg.style.display = isMoreThanHalf ? 'block' : 'none';
     this.titleText.style.display = isMoreThanHalf ? 'none' : 'block';
@@ -131,6 +139,7 @@ export class ResultsPanel {
     this.correctText.textContent = correct;
     this.wrongText.textContent = wrong;
     this.coinsText.textContent = `+${earnedCoins}`;
+    this.gradeText.textContent = `${correctPercent}/100`;
 
     this.root.appendChild(this.el);
   }
