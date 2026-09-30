@@ -194,3 +194,20 @@
     height: clamp(50px, 8vw, 65px);
   }
 }
+
+@media (max-width: 950px) {
+  .welcome-footer {
+    flex-wrap: nowrap;
+    gap: clamp(8px, 3vw, 18px);
+    padding-inline: 8px;
+    margin-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .welcome-action-button {
+    width: clamp(112px, 38vw, 190px);
+    min-width: 0;
+    height: auto;
+    aspect-ratio: 565 / 231;
+    flex: 0 1 190px;
+  }
+  .welcome-action-button img { object-fit: contain; }
+}
