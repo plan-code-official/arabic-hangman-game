@@ -10,7 +10,7 @@
   border: 1px solid #F9FCFC;
   box-shadow: inset 0px 4px 20.8px 5px #009BB4, 0 0 34px rgba(0, 217, 255, 0.32);
   animation: celebrationOverlayIn 360ms ease-out both;
-  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-family: 'Lateef', 'Tajawal', sans-serif;
 }
 
 .celebration--leaving {
