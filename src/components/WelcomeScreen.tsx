@@ -1,11 +1,11 @@
 import React from 'react';
-import './WelcomeScreen.css';
+import GameWelcomeScreen from './GameWelcomeScreen/GameWelcomeScreen';
 import questionCoinImg from '../assets/QuestionCoin.png';
 import questionNumberBg from '../assets/QuestionNumber.png';
 import descriptionImg from '../assets/description.png';
 import startButtonImg from '../assets/start_transparent.png';
 import goldCoinImg from '../assets/daddcoin.webp';
-import exitButtonImg from '../assets/exit_transparent.png';
+import exitButtonImg from '../assets/Exit1.png';
 import backgroundImg from '../assets/Desktop - 91.png';
 
 interface WelcomeScreenProps {
@@ -23,48 +23,31 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   isLoading = false,
   error = null,
 }) => {
-  const totalPoints = totalQuestions;
+  const daddPoints = totalQuestions;
+  const hasQuestions = totalQuestions > 0;
+
+  if (error) {
+    return <div className="welcome-error font-arabic" dir="rtl" style={{ textAlign: 'center', padding: '20px' }}>عذرا حدث خطأ: {error}</div>;
+  }
 
   return (
-    <div
-      className="welcome-screen-new"
-      style={{ backgroundImage: `url("${backgroundImg}")` }}
-    >
-      <div
-        className="welcome-stats-bg"
-        style={{ backgroundImage: `url(${questionNumberBg})` }}
-      >
-        <img src={questionCoinImg} alt="Questions" className="stat-icon" />
-        <span className="stat-value font-arabic">{totalQuestions}</span>
-        <span className="stat-separator">=</span>
-        <span className="stat-value xp-value font-arabic">{totalPoints}</span>
-        <img src={goldCoinImg} alt="XP" className="stat-icon gold-coin" />
-      </div>
-
-      <div className="welcome-body">
-        <img src={descriptionImg} alt="How to Play" className="description-img" />
-      </div>
-
-      <div className="welcome-footer">
-        {error ? (
-          <div className="welcome-error font-arabic">عذرا حدث خطأ: {error}</div>
-        ) : (
-          <>
-            <button className="welcome-action-button exit-button" onClick={onExit} aria-label="خروج">
-              <img src={exitButtonImg} alt="خروج" />
-            </button>
-            <button
-              className="welcome-action-button start-button"
-              onClick={onStart}
-              disabled={isLoading || totalQuestions === 0}
-              aria-label={isLoading ? 'تحميل' : totalQuestions === 0 ? 'لا توجد أسئلة' : 'ابدأ'}
-            >
-              <img src={startButtonImg} alt="ابدأ" />
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+    <GameWelcomeScreen
+      backgroundImage={backgroundImg}
+      statsBgImage={questionNumberBg}
+      statLeftIcon={questionCoinImg}
+      statLeftAlt="عدد الأسئلة"
+      statLeftValue={totalQuestions}
+      statRightValue={daddPoints}
+      statRightIcon={goldCoinImg}
+      statRightAlt="النقاط"
+      descriptionImage={descriptionImg}
+      startButtonImage={startButtonImg}
+      exitButtonImage={exitButtonImg}
+      onStart={onStart}
+      onExit={onExit}
+      isLoading={isLoading}
+      isReady={hasQuestions}
+    />
   );
 };
 

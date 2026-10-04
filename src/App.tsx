@@ -23,9 +23,9 @@ import { CategorySelector } from './components/CategorySelector';
 import { CustomWordModal } from './components/CustomWordModal';
 import WelcomeScreen from './components/WelcomeScreen';
 import Celebration from './components/CelebrationWrapper';
-import ResultsPanel from './components/ResultsPanelWrapper';
+import ResultsPanel from './ResultsPanel/ResultsPanel';
 
-import { Volume2, VolumeX, RotateCcw, Loader2, AlertCircle, Play, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, RotateCcw, Loader2, AlertCircle, Play, Sparkles, Maximize2 } from 'lucide-react';
 import bgImage from './assets/Desktop - 91.png';
 import exitIcon from './assets/ExitButton.svg';
 import daddcoinImg from './assets/daddcoin.webp';
@@ -54,7 +54,9 @@ export const App: React.FC = () => {
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [isSubmittingFinal, setIsSubmittingFinal] = useState<boolean>(false);
   const [sessionCompletionData, setSessionCompletionData] = useState<SessionCompletionData | null>(null);
-  const [hasStarted, setHasStarted] = useState<boolean>(false);
+  const [hasStarted, setHasStarted] = useState<boolean>(() => {
+    return new URLSearchParams(window.location.search).get('started') === 'true';
+  });
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
   const [showResults, setShowResults] = useState<boolean>(false);
 
@@ -186,15 +188,6 @@ export const App: React.FC = () => {
     }
   }, [lessonId, token, mapApiQuestionToWordItem]);
 
-  // Initialize on mount
-  useEffect(() => {
-    if (lessonId && token) {
-      initializeGame();
-    } else {
-      setIsLoading(false);
-    }
-  }, [lessonId, token, initializeGame]);
-
   // Local/Demo Mode pool
   const activeDemoWordsPool = useMemo(() => {
     const all = [...INITIAL_WORDS, ...customWords];
@@ -217,6 +210,18 @@ export const App: React.FC = () => {
     setGameStatus('playing');
     questionStartTimeRef.current = Date.now();
   }, [activeDemoWordsPool]);
+
+  // Initialize on mount
+  useEffect(() => {
+    if (lessonId && token) {
+      initializeGame();
+    } else {
+      setIsLoading(false);
+      if (new URLSearchParams(window.location.search).get('started') === 'true') {
+        startDemoGame();
+      }
+    }
+  }, [lessonId, token, initializeGame, startDemoGame]);
 
   // Load question by index
   const loadQuestionByIndex = useCallback((index: number) => {
@@ -618,6 +623,14 @@ export const App: React.FC = () => {
           <p className="text-xs text-slate-400">
             إذا كنت قادماً من المنصة التعليمية، يرجى تشغيل اللعبة من داخل الدرس للاستمتاع بحفظ النقاط والمكافآت.
           </p>
+          <button
+            type="button"
+            onClick={startDemoGame}
+            className="w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 font-black text-white text-lg shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1 active:scale-95"
+          >
+            <Play className="w-5 h-5 fill-white" />
+            <span>بدء اللعب التجريبي</span>
+          </button>
         </div>
       </div>
     );
@@ -681,71 +694,164 @@ export const App: React.FC = () => {
           </div>
         </header>
 
-        {/* UPPER MAIN CARD: [Robot (Left)] | [Clue Image + Clue Text + Word Slots (DEAD CENTER)] */}
-        <main dir="ltr" className="w-full max-w-6xl mx-auto my-auto px-1 sm:px-4 md:px-8 lg:px-12 py-0.5 sm:py-1.5 flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
-          <div className="relative w-full h-full min-h-0 flex-1 rounded-[1.25rem] sm:rounded-[2.5rem] bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-3xl border-2 border-white/70 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(255,255,255,0.2),0_25px_60px_rgba(15,23,42,0.14)] p-1.5 sm:p-3 lg:p-6 flex flex-row flex-wrap lg:flex-nowrap items-center justify-between gap-1 sm:gap-3 lg:gap-0 overflow-hidden">
+        {/* UPPER MAIN CARD: [Monster Pod (Left)] | [Clue Image + Clue Text + Word Slots (CENTER)] | [Turns HUD (Right)] */}
+        <main dir="ltr" className="w-full max-w-6xl mx-auto my-auto px-1 sm:px-3 md:px-6 lg:px-8 py-0.5 sm:py-1 flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
+          <div className="relative w-full h-full min-h-0 flex-1 rounded-[1.25rem] sm:rounded-[2.5rem] bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-3xl border-2 border-white/70 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(255,255,255,0.2),0_25px_60px_rgba(15,23,42,0.14)] p-1.5 sm:p-3 lg:p-5 flex flex-col justify-center overflow-hidden">
 
-            {/* Left Section: Monster (Top Left on Mobile, Left on Desktop) */}
-            <div className="flex-shrink-0 z-10 order-1 lg:order-1 flex items-center justify-start lg:justify-center pointer-events-none w-1/3 lg:w-auto">
-              <HangmanDisplay wrongGuessesCount={wrongGuessesCount} />
-            </div>
+            {currentWordItem && (
+              <>
+                {/* 1. MOBILE PORTRAIT (< sm): Smart 2-Tier Stack with Full-Width WordSlots */}
+                <div className="flex sm:hidden flex-col w-full h-full justify-between items-center overflow-hidden">
+                  {/* Top Header Row: [Monster Pod] | [Question Audio + Text] | [Turns Badge] */}
+                  <div className="w-full flex items-center justify-between gap-1 shrink-0 px-0.5 pt-0.5">
+                    {/* Monster Pod */}
+                    <div className="shrink-0 flex items-center justify-center pointer-events-none w-[clamp(70px,18vw,100px)]">
+                      <HangmanDisplay wrongGuessesCount={wrongGuessesCount} showThreatBadge={false} />
+                    </div>
 
-            {/* Center Section: Question & Word Slots (Bottom on Mobile, Center on Desktop) */}
-            <div className="w-full lg:flex-1 order-3 lg:order-2 flex flex-col items-center justify-center text-center gap-1 sm:gap-2 pointer-events-auto z-20 min-w-0 mt-0 lg:mt-0 px-1 lg:px-4">
-              {currentWordItem && (
-                <>
-                  {/* Rich Text Question Container */}
-                  <div
-                    className="w-full max-w-3xl flex flex-col items-center justify-center p-1 sm:p-2 mx-auto shrink transition-all gap-1 sm:gap-2"
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).tagName === 'IMG') {
-                        setZoomedImage((e.target as HTMLImageElement).src);
-                      }
-                    }}
-                  >
-                    {/* 1. Audio (if provided) */}
-                    {currentWordItem.audioUrl && (
-                      <button type="button" aria-label="تشغيل صوت السؤال" className={`question-audio-button ${isQuestionAudioPlaying ? 'is-playing' : ''}`} onClick={() => {
-                        if (!questionAudioRef.current) questionAudioRef.current = new Audio(currentWordItem.audioUrl!);
-                        questionAudioRef.current.src = currentWordItem.audioUrl!;
-                        questionAudioRef.current.currentTime = 0;
-                        questionAudioRef.current.onended = () => setIsQuestionAudioPlaying(false);
-                        questionAudioRef.current.play().then(() => setIsQuestionAudioPlaying(true)).catch(() => setIsQuestionAudioPlaying(false));
-                      }}>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4h3l4 3V7l-4 3H4Z" /><path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" /></svg>
-                      </button>
-                    )}
+                    {/* Question Audio + Text */}
+                    <div className="flex-1 flex items-center justify-center gap-1.5 px-1 min-w-0">
+                      {currentWordItem.audioUrl && (
+                        <button
+                          type="button"
+                          aria-label="تشغيل صوت السؤال"
+                          className={`question-audio-button ${isQuestionAudioPlaying ? 'is-playing' : ''}`}
+                          onClick={() => {
+                            if (!questionAudioRef.current) questionAudioRef.current = new Audio(currentWordItem.audioUrl!);
+                            questionAudioRef.current.src = currentWordItem.audioUrl!;
+                            questionAudioRef.current.currentTime = 0;
+                            questionAudioRef.current.onended = () => setIsQuestionAudioPlaying(false);
+                            questionAudioRef.current.play().then(() => setIsQuestionAudioPlaying(true)).catch(() => setIsQuestionAudioPlaying(false));
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 10v4h3l4 3V7l-4 3H4Z" />
+                            <path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" />
+                          </svg>
+                        </button>
+                      )}
 
-                    {/* 2. Image (if provided or as fallback if nothing else exists) */}
-                    {currentWordItem.imageUrl && (currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE || (!currentWordItem.hint && !currentWordItem.audioUrl)) && (
+                      {currentWordItem.hint && currentWordItem.hint !== '.' && currentWordItem.hint !== '<p>.</p>' && currentWordItem.hint !== '<p>.</p>\n' && (
+                        <div
+                          dir="rtl"
+                          className="text-center text-white text-[clamp(1.05rem,3.6vw,1.45rem)] font-black tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] leading-tight max-h-[58px] overflow-y-auto no-scrollbar"
+                          dangerouslySetInnerHTML={{ __html: currentWordItem.hint }}
+                        />
+                      )}
+                    </div>
+
+
+                  </div>
+
+                  {/* Center Row: Image (if provided) */}
+                  {currentWordItem.imageUrl && (currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE || (!currentWordItem.hint && !currentWordItem.audioUrl)) && (
+                    <div
+                      className="flex-1 flex items-center justify-center min-h-0 my-0.5 group cursor-zoom-in relative"
+                      onClick={() => setZoomedImage(currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE ? currentWordItem.imageUrl : bgImage)}
+                    >
                       <img
                         src={currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE ? currentWordItem.imageUrl : bgImage}
                         alt="سؤال"
-                        className="max-w-full max-h-[clamp(65px,11vh,140px)] object-contain rounded-xl shadow-[0_8px_20px_rgba(0,0,0,0.4)] border border-white/20 cursor-zoom-in transition-transform hover:scale-105"
-                        onClick={(e) => setZoomedImage((e.target as HTMLImageElement).src)}
+                        className="max-h-[clamp(70px,18vh,135px)] max-w-full object-contain rounded-xl shadow-md border border-white/30"
                       />
-                    )}
+                    </div>
+                  )}
 
-                    {/* 3. Text/HTML (if provided) */}
-                    {currentWordItem.hint && (
-                      <div
-                        className="w-full flex flex-col items-center justify-center text-white text-[clamp(1.4rem,4vw,2.5rem)] font-black tracking-wide drop-shadow-[0_3px_6px_rgba(0,0,0,0.8)] gap-1 [&_img]:max-w-full [&_img]:max-h-[clamp(60px,11vh,120px)] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0 text-center"
-                        dangerouslySetInnerHTML={{ __html: currentWordItem.hint }}
-                      />
-                    )}
-                  </div>
-
-                  {/* Word Slots below Image (Centered) */}
-                  <div className="w-full flex items-center justify-center text-center mx-auto">
+                  {/* Bottom Row: Full Width WordSlots */}
+                  <div className="w-full flex items-center justify-center text-center shrink-0 mt-auto pt-0.5 pb-0.5">
                     <WordSlots
                       targetWord={cleanArabicWord(currentWordItem.word)}
                       guessedLetters={guessedLetters}
                       revealAll={gameStatus === 'lost'}
                     />
                   </div>
-                </>
-              )}
-            </div>
+                </div>
+
+                {/* 2. TABLET & DESKTOP (>= sm): 3-Column Balanced Horizontal Layout */}
+                <div className="hidden sm:flex flex-row items-center justify-between w-full h-full gap-2 md:gap-4 overflow-hidden">
+                  {/* Left Section: Monster Pod */}
+                  <div className="shrink-0 z-10 flex items-center justify-center pointer-events-none w-[clamp(120px,22vw,260px)]">
+                    <HangmanDisplay wrongGuessesCount={wrongGuessesCount} />
+                  </div>
+
+                  {/* Center Section: Question Clue & Word Slots (Strictly Centered) */}
+                  <div className="flex-1 flex flex-col items-center justify-center text-center gap-1 sm:gap-1.5 pointer-events-auto z-20 min-w-0 px-1 sm:px-3 lg:px-6 h-full max-h-full overflow-hidden">
+                    {/* Question Clue Container (Responsive Audio, Image, and Text) */}
+                    <div
+                      className="w-full max-w-2xl flex flex-col items-center justify-center mx-auto shrink transition-all gap-1 sm:gap-1.5 max-h-[58%] overflow-y-auto no-scrollbar"
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).tagName === 'IMG') {
+                          setZoomedImage((e.target as HTMLImageElement).src);
+                        }
+                      }}
+                    >
+                      {/* Clue Row: Audio Button + Question Text */}
+                      <div className="w-full flex items-center justify-center gap-1.5 sm:gap-2.5 flex-wrap">
+                        {/* 1. Audio (if provided) */}
+                        {currentWordItem.audioUrl && (
+                          <button
+                            type="button"
+                            aria-label="تشغيل صوت السؤال"
+                            className={`question-audio-button ${isQuestionAudioPlaying ? 'is-playing' : ''}`}
+                            onClick={() => {
+                              if (!questionAudioRef.current) questionAudioRef.current = new Audio(currentWordItem.audioUrl!);
+                              questionAudioRef.current.src = currentWordItem.audioUrl!;
+                              questionAudioRef.current.currentTime = 0;
+                              questionAudioRef.current.onended = () => setIsQuestionAudioPlaying(false);
+                              questionAudioRef.current.play().then(() => setIsQuestionAudioPlaying(true)).catch(() => setIsQuestionAudioPlaying(false));
+                            }}
+                          >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                              <path d="M4 10v4h3l4 3V7l-4 3H4Z" />
+                              <path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" />
+                            </svg>
+                          </button>
+                        )}
+
+                        {/* 2. Text / HTML Hint (if provided) */}
+                        {currentWordItem.hint && currentWordItem.hint !== '.' && currentWordItem.hint !== '<p>.</p>' && currentWordItem.hint !== '<p>.</p>\n' && (
+                          <div
+                            dir="rtl"
+                            className="flex-1 min-w-0 text-center text-white text-[clamp(1.15rem,3.2vw,2.2rem)] font-black tracking-wide drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)] leading-tight [&_img]:max-w-full [&_img]:max-h-[clamp(50px,11vh,110px)] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0"
+                            dangerouslySetInnerHTML={{ __html: currentWordItem.hint }}
+                          />
+                        )}
+                      </div>
+
+                      {/* 3. Image (if provided or as fallback if nothing else exists) */}
+                      {currentWordItem.imageUrl && (currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE || (!currentWordItem.hint && !currentWordItem.audioUrl)) && (
+                        <div className="relative group cursor-zoom-in mt-0.5">
+                          <img
+                            src={currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE ? currentWordItem.imageUrl : bgImage}
+                            alt="سؤال"
+                            className={`max-w-full object-contain rounded-xl sm:rounded-2xl shadow-[0_6px_20px_rgba(0,0,0,0.35)] border border-white/30 transition-transform duration-200 group-hover:scale-105 ${
+                              currentWordItem.hint
+                                ? 'max-h-[clamp(50px,11vh,115px)]'
+                                : 'max-h-[clamp(80px,21vh,165px)]'
+                            }`}
+                            onClick={(e) => setZoomedImage((e.target as HTMLImageElement).src)}
+                          />
+                          <div className="absolute bottom-1 right-1 p-1 rounded-md bg-black/60 backdrop-blur-sm text-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                            <Maximize2 className="w-3.5 h-3.5" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Word Slots below Clues (Centered) */}
+                    <div className="w-full flex items-center justify-center text-center mx-auto shrink-0 mt-0.5 sm:mt-1">
+                      <WordSlots
+                        targetWord={cleanArabicWord(currentWordItem.word)}
+                        guessedLetters={guessedLetters}
+                        revealAll={gameStatus === 'lost'}
+                      />
+                    </div>
+                  </div>
+
+
+                </div>
+              </>
+            )}
 
           </div>
         </main>

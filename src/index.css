@@ -6,12 +6,52 @@
 .answer-feedback-card--wrong { color:#ff5d5c; border-color:#ff5d5c; text-shadow:0 0 16px rgba(255,93,92,.55); }
 .answer-feedback__icon { width:1.15em; height:1.15em; flex:0 0 auto; }
 .answer-feedback__text { display:inline-block; }
-.question-audio-button { width:46px; height:46px; display:grid; place-items:center; border:2px solid rgba(255,255,255,.6); border-radius:50%; color:#fff; background:#0ea5e9; cursor:pointer; box-shadow:0 5px 14px rgba(14,165,233,.35); }
-.question-audio-button svg { width:25px; height:25px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.question-audio-button {
+  width: clamp(38px, 5.5vw, 46px);
+  height: clamp(38px, 5.5vw, 46px);
+  display: grid;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.4);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+.question-audio-button:hover {
+  transform: scale(1.06);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6);
+  border-color: #ffffff;
+}
+.question-audio-button:active {
+  transform: scale(0.95);
+}
+.question-audio-button.is-playing {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  box-shadow: 0 0 18px rgba(14, 165, 233, 0.8), 0 0 30px rgba(37, 99, 235, 0.5);
+  animation: audioPulse 1.2s infinite ease-in-out;
+}
+.question-audio-button svg {
+  width: clamp(20px, 3.2vw, 24px);
+  height: clamp(20px, 3.2vw, 24px);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .answer-feedback-card { direction: ltr; flex-direction: row; }
 .answer-feedback__text { direction: rtl; }
 @keyframes answerFeedbackOverlayIn { from { opacity:0; } to { opacity:1; } }
 @keyframes answerFeedbackPop { from { opacity:0; transform:scale(.88) translateY(10px); } to { opacity:1; transform:scale(1) translateY(0); } }
+@keyframes audioPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.08); filter: brightness(1.2); }
+}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 @layer base {
   html,
