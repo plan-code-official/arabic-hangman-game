@@ -66,7 +66,7 @@ export interface CompleteSessionApiResponse {
   message?: string;
 }
 
-const BASE_URL = 'https://learning-platform-f6cy.onrender.com/api/v1';
+const BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/api/v1`;
 const GAME_ID = 11;
 
 let latestToken: string | null = null;
