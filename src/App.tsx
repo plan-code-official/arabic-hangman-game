@@ -558,6 +558,14 @@ export const App: React.FC = () => {
     restartEntireGame();
   }, [restartEntireGame, saveStats]);
 
+  const handleExitSite = () => {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      window.location.href = '/'; 
+    }
+  };
+
   // -------------------------------------------------------------
   // RENDER: Welcome Screen (replaces Loading Spinner)
   // -------------------------------------------------------------
@@ -566,7 +574,7 @@ export const App: React.FC = () => {
       <WelcomeScreen
         totalQuestions={isDemoMode ? activeDemoWordsPool.length : apiQuestions.length}
         onStart={() => setHasStarted(true)}
-        onExit={() => window.history.back()}
+        onExit={handleExitSite}
         isLoading={isLoading}
         error={initError}
       />
@@ -660,7 +668,7 @@ export const App: React.FC = () => {
               {/* Right side (RTL Context): Exit Button */}
               <button
                 type="button"
-                onClick={() => window.history.back()}
+                onClick={handleExitSite}
                 className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-[#f8f9fa] hover:bg-white transition-colors rounded-[0.85rem] sm:rounded-[1rem] flex items-center justify-center shadow-lg active:scale-95 shrink-0"
                 aria-label="خروج"
               >
@@ -920,7 +928,7 @@ export const App: React.FC = () => {
             wrongAnswers={wrongCount}
             coins={sessionCompletionData.coins || 0}
             onRetry={handleRetry}
-            onBack={() => window.history.back()}
+            onBack={handleExitSite}
           />
         );
       })()}
