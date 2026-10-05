@@ -39,7 +39,8 @@ export const App: React.FC = () => {
     const searchParams = new URLSearchParams(window.location.search);
     return {
       lessonId: searchParams.get('lessonId'),
-      token: searchParams.get('token'),
+      // Optional: when absent, gameApi obtains the token via the refresh endpoint
+      token: searchParams.get('token') || '',
     };
   });
 
@@ -142,7 +143,7 @@ export const App: React.FC = () => {
   // Start or reset session from API
   const initializeGame = useCallback(async () => {
     // Check if token and lessonId are present
-    if (!lessonId || !token) {
+    if (!lessonId) {
       setIsLoading(false);
       setInitError(null);
       // Let user know params are missing, allow Demo Mode
@@ -213,7 +214,7 @@ export const App: React.FC = () => {
 
   // Initialize on mount
   useEffect(() => {
-    if (lessonId && token) {
+    if (lessonId) {
       initializeGame();
     } else {
       setIsLoading(false);
@@ -267,7 +268,7 @@ export const App: React.FC = () => {
     setIsSubmittingFinal(true);
 
     // 1. API Mode
-    if (sessionId && token) {
+    if (sessionId) {
       try {
         // C. Submit Answers (Ensure at least 1 answer is submitted)
         const answersToSubmit = [...accumulatedAnswersRef.current];
@@ -530,7 +531,7 @@ export const App: React.FC = () => {
 
   // Restart entire session
   const restartEntireGame = () => {
-    if (lessonId && token) {
+    if (lessonId) {
       initializeGame();
     } else {
       startDemoGame();
@@ -613,7 +614,7 @@ export const App: React.FC = () => {
   // -------------------------------------------------------------
   // RENDER: Missing Token / LessonId Notice (User-friendly fallback)
   // -------------------------------------------------------------
-  if (!isDemoMode && (!lessonId || !token) && !currentWordItem) {
+  if (!isDemoMode && !lessonId && !currentWordItem) {
     return (
       <div className="relative min-h-screen w-full flex items-center justify-center font-arabic select-none p-4">
         <div
@@ -626,7 +627,7 @@ export const App: React.FC = () => {
           </div>
           <h3 className="text-2xl font-black text-white">مرحباً بك في تحدي تخمين الكلمات!</h3>
           <p className="text-sm text-slate-300 leading-relaxed">
-            لم يتم العثور على معرّف الدرس (<code className="text-blue-300 bg-white/10 px-1.5 py-0.5 rounded">lessonId</code>) أو رمز التحقق (<code className="text-blue-300 bg-white/10 px-1.5 py-0.5 rounded">token</code>) في الرابط.
+            لم يتم العثور على معرّف الدرس (<code className="text-blue-300 bg-white/10 px-1.5 py-0.5 rounded">lessonId</code>) في الرابط.
           </p>
           <p className="text-xs text-slate-400">
             إذا كنت قادماً من المنصة التعليمية، يرجى تشغيل اللعبة من داخل الدرس للاستمتاع بحفظ النقاط والمكافآت.
