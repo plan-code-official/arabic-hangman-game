@@ -7,7 +7,7 @@ import panelArt from '../assets/results-panel-empty.png';
 import celebrationTitle from './assets/good.png';
 import exitButtonImage from '../assets/Exit1.png';
 import retryButtonImage from '../assets/retry.png';
- 
+
 const numberValue = (value: any) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;

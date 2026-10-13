@@ -13,7 +13,7 @@ import fireworksSoundUrl from '../Celebration/fireworks.mp3';
 // Results Panel Assets
 import panelArt from '../assets/results-panel-empty.png';
 import celebrationTitle from '../ResultsPanel/assets/good.png';
-import retryButtonImage from '../assets/Retry.png';
+import retryButtonImage from '../assets/retry.png';
 
 // Monster Parts Assets
 import part1 from '../assets/1m.png';
