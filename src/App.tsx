@@ -22,16 +22,74 @@ import { SessionResultModal } from './components/SessionResultModal';
 import { CategorySelector } from './components/CategorySelector';
 import { CustomWordModal } from './components/CustomWordModal';
 import WelcomeScreen from './components/WelcomeScreen';
+import ErrorScreen from './components/ErrorScreen/ErrorScreen';
 import Celebration from './components/CelebrationWrapper';
 import ResultsPanel from './ResultsPanel/ResultsPanel';
+import { preloadGameAssets, preloadAudio } from './utils/preloadAssets';
 
 import { Volume2, VolumeX, RotateCcw, Loader2, AlertCircle, Play, Sparkles, Maximize2 } from 'lucide-react';
-import bgImage from './assets/Desktop - 91.png';
+const bgImage = '/BG.jpeg';
 import exitIcon from './assets/ExitButton.svg';
 import daddcoinImg from './assets/daddcoin.webp';
 const MAX_ATTEMPTS = 6;
-const DEFAULT_FALLBACK_IMAGE =
-  'https://images.unsplash.com/photo-1546527868-ccb7ee7dfa6a?w=600&auto=format&fit=crop&q=80';
+
+// Extract image URL from HTML content (e.g. <img src="...">)
+const extractImageFromHtml = (html?: string | null): string | null => {
+  if (!html) return null;
+  const decoded = html
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+  const match = decoded.match(/<img[^>]+src=["']?([^"'\s>]+)["']?/i);
+  return match ? match[1] : null;
+};
+
+// Extract audio URL from HTML content (e.g. <audio src="..."> or <source src="...">)
+const extractAudioFromHtml = (html?: string | null): string | null => {
+  if (!html) return null;
+  const decoded = html
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
+  const matchAudio = decoded.match(/<audio[^>]+src=["']?([^"'\s>]+)["']?/i);
+  if (matchAudio) return matchAudio[1];
+  const matchSource = decoded.match(/<source[^>]+src=["']?([^"'\s>]+)["']?/i);
+  if (matchSource) return matchSource[1];
+  return null;
+};
+
+// Remove <img> and <audio> tags from HTML string to prevent duplicate/broken inline rendering
+const removeMediaTags = (html?: string | null): string => {
+  if (!html) return '';
+  return html
+    .replace(/<audio[\s\S]*?<\/audio>/gi, '')
+    .replace(/<audio[^>]*>/gi, '')
+    .replace(/<source[^>]*>/gi, '')
+    .replace(/<img[^>]*>/gi, '')
+    .replace(/&lt;img[^&]*&gt;/gi, '')
+    .trim();
+};
+
+const removeImgTags = removeMediaTags;
+
+// Robust check for valid question text (ignores empty HTML, whitespace, img/audio tags, and single ".")
+const isValidHint = (hint?: string | null): boolean => {
+  if (!hint) return false;
+  const stripped = hint
+    .replace(/<audio[\s\S]*?<\/audio>/gi, '')
+    .replace(/<audio[^>]*>/gi, '')
+    .replace(/<source[^>]*>/gi, '')
+    .replace(/<img[^>]*>/gi, '')
+    .replace(/&lt;img[^&]*&gt;/gi, '')
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+  return stripped.length > 0 && stripped !== '.';
+};
 
 export const App: React.FC = () => {
   // 1. Extract URL Parameters on mount
@@ -45,6 +103,16 @@ export const App: React.FC = () => {
   });
 
   const { lessonId, token } = urlParams;
+
+  // Image failure tracking (ensures broken images from endpoint are hidden gracefully)
+  const [failedImages, setFailedImages] = useState<Record<string, boolean>>({});
+
+  // Check if an image is provided from endpoints and is valid
+  const hasValidImage = useCallback((imageUrl?: string | null): boolean => {
+    if (!imageUrl) return false;
+    const trimmed = imageUrl.trim();
+    return trimmed.length > 0 && trimmed !== bgImage && !failedImages[trimmed];
+  }, [failedImages]);
 
   // API State
   const [apiQuestions, setApiQuestions] = useState<ApiQuestion[]>([]);
@@ -107,21 +175,115 @@ export const App: React.FC = () => {
   const [currentWordItem, setCurrentWordItem] = useState<WordItem | null>(null);
   const [guessedLetters, setGuessedLetters] = useState<Set<string>>(new Set());
   const [gameStatus, setGameStatus] = useState<'playing' | 'won' | 'lost'>('playing');
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [isRevealingRightAnswer, setIsRevealingRightAnswer] = useState(false);
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
   const [isQuestionAudioPlaying, setIsQuestionAudioPlaying] = useState(false);
   const questionAudioRef = useRef<HTMLAudioElement | null>(null);
 
   // Convert ApiQuestion to WordItem
   const mapApiQuestionToWordItem = useCallback((q: ApiQuestion): WordItem => {
-    // 1. Try to find an image in options that matches the correct answer
-    const matchingOption = q.options?.find(
-      (opt) => opt.text.trim() === q.correctAnswer.trim() && opt.imageUrl
-    );
-    // 2. Try any option that has an image
-    const anyImageOption = q.options?.find((opt) => opt.imageUrl);
+    const rawQuestion = String((q as any).question ?? (q as any).text ?? '');
+    const rawHint = (q as any).hint ? String((q as any).hint) : '';
+    const extractedImgFromQuestion = extractImageFromHtml(rawQuestion);
+    const extractedImgFromHint = extractImageFromHtml(rawHint);
 
-    // Prioritize top-level imageUrl from question
-    const imageUrl = q.imageUrl || matchingOption?.imageUrl || anyImageOption?.imageUrl || DEFAULT_FALLBACK_IMAGE;
+    let parsedOptions: any[] = [];
+    if (Array.isArray(q.options)) {
+      parsedOptions = q.options;
+    } else if (typeof q.options === 'string') {
+      try {
+        parsedOptions = JSON.parse(q.options);
+      } catch (e) {
+        parsedOptions = [];
+      }
+    }
+
+    // 1. Try to find an image in options that matches the correct answer
+    const matchingOption = parsedOptions.find(
+      (opt: any) => typeof opt !== 'string' && opt?.text?.trim?.() === q.correctAnswer?.trim?.() && (opt.imageUrl || opt.image || opt.image_url)
+    );
+    const matchingOptImg = matchingOption ? ((matchingOption as any).imageUrl || (matchingOption as any).image || (matchingOption as any).image_url) : null;
+
+    // 2. Try any option that has an image
+    const anyImageOption = parsedOptions.find(
+      (opt: any) => typeof opt !== 'string' && (opt.imageUrl || opt.image || opt.image_url)
+    );
+    const anyOptImg = anyImageOption ? ((anyImageOption as any).imageUrl || (anyImageOption as any).image || (anyImageOption as any).image_url) : null;
+
+    // 3. Direct question image property
+    const directQuestionImg =
+      q.imageUrl ||
+      (q as any).image ||
+      (q as any).questionImage ||
+      (q as any).image_url ||
+      (q as any).question_image ||
+      (q as any).mediaUrl ||
+      (q as any).media ||
+      (q as any).photo ||
+      (q as any).photoUrl ||
+      (q as any).fileUrl;
+
+    // Prioritize direct question image, extracted <img> from question HTML, or option image (only if provided in endpoint)
+    const imageUrl =
+      directQuestionImg ||
+      extractedImgFromQuestion ||
+      extractedImgFromHint ||
+      matchingOptImg ||
+      anyOptImg ||
+      undefined;
+
+    const extractedAudioFromQuestion = extractAudioFromHtml(rawQuestion);
+    const extractedAudioFromHint = extractAudioFromHtml(rawHint);
+
+    // Direct question audio properties
+    const directQuestionAudio =
+      q.audioUrl ||
+      (q as any).audio ||
+      (q as any).audio_url ||
+      (q as any).voice ||
+      (q as any).voiceUrl ||
+      (q as any).voice_url ||
+      (q as any).sound ||
+      (q as any).soundUrl ||
+      (q as any).sound_url ||
+      (q as any).mediaAudio ||
+      (q as any).fileAudio;
+
+    // Option-level audio properties
+    const matchingOptAudio =
+      (matchingOption as any)?.audioUrl ||
+      (matchingOption as any)?.audio ||
+      (matchingOption as any)?.audio_url ||
+      (matchingOption as any)?.voice ||
+      (matchingOption as any)?.sound;
+
+    const anyAudioOption = parsedOptions.find(
+      (opt: any) =>
+        typeof opt !== 'string' &&
+        (opt?.audioUrl || opt?.audio || opt?.audio_url || opt?.voice || opt?.sound || opt?.soundUrl || opt?.voiceUrl)
+    );
+    const anyOptAudio = anyAudioOption
+      ? ((anyAudioOption as any).audioUrl || (anyAudioOption as any).audio || (anyAudioOption as any).audio_url || (anyAudioOption as any).voice || (anyAudioOption as any).sound || (anyAudioOption as any).soundUrl || (anyAudioOption as any).voiceUrl)
+      : null;
+
+    const resolvedAudioUrl =
+      directQuestionAudio ||
+      extractedAudioFromQuestion ||
+      extractedAudioFromHint ||
+      matchingOptAudio ||
+      anyOptAudio ||
+      undefined;
+
+    // Clean question text of <img> and <audio> tags if extracted so text is clear
+    const cleanedQuestionText = removeMediaTags(rawQuestion);
+    const cleanedHintText = removeMediaTags(rawHint);
+
+    const effectiveText = isValidHint(cleanedQuestionText)
+      ? cleanedQuestionText
+      : isValidHint(cleanedHintText)
+      ? cleanedHintText
+      : undefined;
 
     return {
       id: String(q.id),
@@ -129,8 +291,8 @@ export const App: React.FC = () => {
       category: 'all',
       categoryNameAr: lessonTitle || 'سؤال الدرس',
       imageUrl,
-      hint: q.question || undefined,
-      audioUrl: q.audioUrl || matchingOption?.audioUrl || anyImageOption?.audioUrl || undefined,
+      hint: effectiveText,
+      audioUrl: resolvedAudioUrl,
     };
   }, [lessonTitle]);
 
@@ -166,6 +328,14 @@ export const App: React.FC = () => {
       setApiQuestions(fetchedQuestions);
       setLessonTitle(questionsRes.data.lessonName || 'تحدي الكلمات');
 
+      // Preload question audio assets upfront non-blockingly
+      fetchedQuestions.forEach((q) => {
+        const item = mapApiQuestionToWordItem(q);
+        if (item.audioUrl) {
+          preloadAudio(item.audioUrl);
+        }
+      });
+
       // B. Start Game Session (Called once when session begins)
       const sessionRes = await startGameSession(lessonId, token);
       if (!sessionRes.success || !sessionRes.data?.id) {
@@ -179,6 +349,8 @@ export const App: React.FC = () => {
       setCurrentWordItem(mapApiQuestionToWordItem(firstQ));
       setGuessedLetters(new Set());
       setGameStatus('playing');
+      setShowGameOverModal(false);
+      setIsRevealingRightAnswer(false);
       questionStartTimeRef.current = Date.now();
       setIsDemoMode(false);
     } catch (err: any) {
@@ -206,11 +378,23 @@ export const App: React.FC = () => {
     accumulatedAnswersRef.current = [];
 
     const firstWord = activeDemoWordsPool[Math.floor(Math.random() * activeDemoWordsPool.length)];
-    setCurrentWordItem(firstWord);
+    const extractedFirstImg = extractImageFromHtml(firstWord.hint);
+    setCurrentWordItem({
+      ...firstWord,
+      imageUrl: firstWord.imageUrl || extractedFirstImg || undefined,
+      hint: extractedFirstImg ? removeImgTags(firstWord.hint) : firstWord.hint,
+    });
     setGuessedLetters(new Set());
     setGameStatus('playing');
+    setShowGameOverModal(false);
+    setIsRevealingRightAnswer(false);
     questionStartTimeRef.current = Date.now();
   }, [activeDemoWordsPool]);
+
+  // Preload Welcome Screen, Celebration, and Results Panel assets
+  useEffect(() => {
+    preloadGameAssets();
+  }, []);
 
   // Initialize on mount
   useEffect(() => {
@@ -229,6 +413,8 @@ export const App: React.FC = () => {
     setRoundIndex(index);
     setGuessedLetters(new Set());
     setGameStatus('playing');
+    setShowGameOverModal(false);
+    setIsRevealingRightAnswer(false);
     questionStartTimeRef.current = Date.now();
 
     if (apiQuestions.length > 0 && apiQuestions[index]) {
@@ -236,7 +422,12 @@ export const App: React.FC = () => {
     } else {
       // Demo / fallback
       const rand = activeDemoWordsPool[Math.floor(Math.random() * activeDemoWordsPool.length)];
-      setCurrentWordItem(rand);
+      const extractedRandImg = extractImageFromHtml(rand.hint);
+      setCurrentWordItem({
+        ...rand,
+        imageUrl: rand.imageUrl || extractedRandImg || undefined,
+        hint: extractedRandImg ? removeImgTags(rand.hint) : rand.hint,
+      });
     }
   }, [apiQuestions, mapApiQuestionToWordItem, activeDemoWordsPool]);
 
@@ -377,14 +568,36 @@ export const App: React.FC = () => {
     setIsSubmittingFinal(false);
   }, [sessionId, token, apiQuestions, totalRounds]);
 
+  // Round modal complete handler:
+  // If user lost, remove modal, reveal right answer for 1s, then go to next question
+  // If user won, proceed directly to next question
+  const handleRoundModalComplete = useCallback(() => {
+    setShowGameOverModal(false);
+
+    if (gameStatus === 'lost') {
+      setIsRevealingRightAnswer(true);
+
+      setTimeout(() => {
+        setIsRevealingRightAnswer(false);
+        if (roundIndex < totalRounds - 1) {
+          loadQuestionByIndex(roundIndex + 1);
+        } else {
+          handleFinishSession();
+        }
+      }, 1000); // exactly 1s reveal of right answer
+    } else {
+      if (roundIndex < totalRounds - 1) {
+        loadQuestionByIndex(roundIndex + 1);
+      } else {
+        handleFinishSession();
+      }
+    }
+  }, [gameStatus, roundIndex, totalRounds, loadQuestionByIndex, handleFinishSession]);
+
   // Next round handler
   const handleNextRound = useCallback(() => {
-    if (roundIndex < totalRounds - 1) {
-      loadQuestionByIndex(roundIndex + 1);
-    } else {
-      handleFinishSession();
-    }
-  }, [roundIndex, totalRounds, loadQuestionByIndex, handleFinishSession]);
+    handleRoundModalComplete();
+  }, [handleRoundModalComplete]);
 
   // Save Stats to LocalStorage
   const saveStats = (newStats: GameStats) => {
@@ -415,7 +628,14 @@ export const App: React.FC = () => {
   // Handle letter guess
   const handleGuess = useCallback(
     (letter: string) => {
-      if (gameStatus !== 'playing' || wrongGuessesCount >= MAX_ATTEMPTS || !currentWordItem) return;
+      if (
+        gameStatus !== 'playing' ||
+        showGameOverModal ||
+        isRevealingRightAnswer ||
+        wrongGuessesCount >= MAX_ATTEMPTS ||
+        !currentWordItem
+      )
+        return;
 
       // Check if already guessed
       const alreadyGuessed = Array.from(guessedLetters).some((g) =>
@@ -452,10 +672,11 @@ export const App: React.FC = () => {
 
           recordCurrentAnswer(true);
 
-          // Short delay so player can see the final solved letter box
+          // Short delay so player can see the final solved letter box, then show modal
           setTimeout(() => {
             setGameStatus('won');
-          }, 800);
+            setShowGameOverModal(true);
+          }, 600);
         }
       } else {
         sounds.playWrong();
@@ -470,14 +691,15 @@ export const App: React.FC = () => {
 
           recordCurrentAnswer(false);
 
-          // Render the last part of the monster FIRST, let the player see complete assembly, then open modal
+          // Show wrong answer modal after the wrong guess registers
           setTimeout(() => {
             setGameStatus('lost');
-          }, 1500);
+            setShowGameOverModal(true);
+          }, 600);
         }
       }
     },
-    [gameStatus, currentWordItem, guessedLetters, stats, wrongGuessesCount, recordCurrentAnswer]
+    [gameStatus, showGameOverModal, isRevealingRightAnswer, currentWordItem, guessedLetters, stats, wrongGuessesCount, recordCurrentAnswer]
   );
 
   // Listen for physical keyboard input
@@ -488,6 +710,8 @@ export const App: React.FC = () => {
         isCustomModalOpen ||
         wrongGuessesCount >= MAX_ATTEMPTS ||
         gameStatus !== 'playing' ||
+        showGameOverModal ||
+        isRevealingRightAnswer ||
         sessionCompletionData
       )
         return;
@@ -500,7 +724,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleGuess, isCategoryModalOpen, isCustomModalOpen, wrongGuessesCount, gameStatus, sessionCompletionData]);
+  }, [handleGuess, isCategoryModalOpen, isCustomModalOpen, wrongGuessesCount, gameStatus, showGameOverModal, isRevealingRightAnswer, sessionCompletionData]);
 
   // Toggle Sound Mute
   const handleToggleMute = () => {
@@ -526,6 +750,8 @@ export const App: React.FC = () => {
   const restartCurrentRound = () => {
     setGuessedLetters(new Set());
     setGameStatus('playing');
+    setShowGameOverModal(false);
+    setIsRevealingRightAnswer(false);
     questionStartTimeRef.current = Date.now();
   };
 
@@ -559,6 +785,53 @@ export const App: React.FC = () => {
     restartEntireGame();
   }, [restartEntireGame, saveStats]);
 
+  // Toggle or play question audio
+  const handleToggleQuestionAudio = useCallback((audioUrl?: string) => {
+    if (!audioUrl) return;
+
+    if (isQuestionAudioPlaying && questionAudioRef.current) {
+      questionAudioRef.current.pause();
+      questionAudioRef.current.currentTime = 0;
+      setIsQuestionAudioPlaying(false);
+      return;
+    }
+
+    if (!questionAudioRef.current) {
+      questionAudioRef.current = new Audio();
+    }
+
+    questionAudioRef.current.src = audioUrl;
+    questionAudioRef.current.currentTime = 0;
+    questionAudioRef.current.onended = () => setIsQuestionAudioPlaying(false);
+    questionAudioRef.current.onerror = () => setIsQuestionAudioPlaying(false);
+    questionAudioRef.current
+      .play()
+      .then(() => setIsQuestionAudioPlaying(true))
+      .catch((err) => {
+        console.warn('Audio playback error:', err);
+        setIsQuestionAudioPlaying(false);
+      });
+  }, [isQuestionAudioPlaying]);
+
+  // Stop question audio playback whenever question changes or modals open
+  useEffect(() => {
+    if (questionAudioRef.current) {
+      questionAudioRef.current.pause();
+      questionAudioRef.current.currentTime = 0;
+    }
+    setIsQuestionAudioPlaying(false);
+  }, [currentWordItem?.id, showGameOverModal, showCelebration, showResults]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (questionAudioRef.current) {
+        questionAudioRef.current.pause();
+        questionAudioRef.current = null;
+      }
+    };
+  }, []);
+
   const handleExitSite = () => {
     if (window.history.length > 1) {
       window.history.back();
@@ -568,80 +841,52 @@ export const App: React.FC = () => {
   };
 
   // -------------------------------------------------------------
-  // RENDER: Welcome Screen (replaces Loading Spinner)
   // -------------------------------------------------------------
-  if (!hasStarted) {
+  // RENDER: Error / Missing lessonId Screens
+  // -------------------------------------------------------------
+  if (!lessonId) {
     return (
-      <WelcomeScreen
-        totalQuestions={isDemoMode ? activeDemoWordsPool.length : apiQuestions.length}
-        onStart={() => setHasStarted(true)}
+      <ErrorScreen
         onExit={handleExitSite}
-        isLoading={isLoading}
-        error={initError}
+        description="لا يمكننا العثور على الدرس المطلوب. يرجى التأكد من الرابط أو العودة للرئيسية."
+      />
+    );
+  }
+
+  if (initError) {
+    return (
+      <ErrorScreen
+        onExit={handleExitSite}
+        description={
+          typeof initError === 'string' && initError.toLowerCase().includes('lessonid')
+            ? 'لا يمكننا العثور على الدرس المطلوب. يرجى التأكد من الرابط أو العودة للرئيسية.'
+            : initError
+        }
+      />
+    );
+  }
+
+  if (!isLoading && apiQuestions.length === 0) {
+    return (
+      <ErrorScreen
+        onExit={handleExitSite}
+        description="لم يتم العثور على أي أسئلة لهذا الدرس. يرجى التأكد من محتوى الدرس أو العودة للرئيسية."
       />
     );
   }
 
   // -------------------------------------------------------------
-  // RENDER: Initialization Error
+  // RENDER: Welcome Screen (replaces Loading Spinner)
   // -------------------------------------------------------------
-  if (initError) {
+  if (!hasStarted) {
     return (
-      <div className="relative min-h-screen w-full flex items-center justify-center font-arabic select-none p-4">
-        <div
-          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-          style={{ backgroundImage: `url("${bgImage}")` }}
-        />
-        <div className="relative z-10 p-8 rounded-3xl bg-black/75 backdrop-blur-2xl border border-rose-500/40 text-white flex flex-col items-center gap-4 text-center max-w-md shadow-2xl animate-pop">
-          <AlertCircle className="w-14 h-14 text-rose-400 animate-shake" />
-          <h3 className="text-2xl font-black text-rose-400">عذراً، حدث خطأ!</h3>
-          <p className="text-sm text-slate-200 leading-relaxed">{initError}</p>
-          <div className="flex flex-col sm:flex-row gap-3 w-full mt-2">
-            <button
-              type="button"
-              onClick={initializeGame}
-              className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-black text-white transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>إعادة المحاولة</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // -------------------------------------------------------------
-  // RENDER: Missing Token / LessonId Notice (User-friendly fallback)
-  // -------------------------------------------------------------
-  if (!isDemoMode && !lessonId && !currentWordItem) {
-    return (
-      <div className="relative min-h-screen w-full flex items-center justify-center font-arabic select-none p-4">
-        <div
-          className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat pointer-events-none"
-          style={{ backgroundImage: `url("${bgImage}")` }}
-        />
-        <div className="relative z-10 p-6 sm:p-8 rounded-[2.5rem] bg-black/75 backdrop-blur-2xl border border-white/20 text-white flex flex-col items-center gap-4 text-center max-w-md shadow-2xl animate-pop">
-          <div className="w-16 h-16 rounded-2xl bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 shadow-lg">
-            <Sparkles className="w-8 h-8" />
-          </div>
-          <h3 className="text-2xl font-black text-white">مرحباً بك في تحدي تخمين الكلمات!</h3>
-          <p className="text-sm text-slate-300 leading-relaxed">
-            لم يتم العثور على معرّف الدرس (<code className="text-blue-300 bg-white/10 px-1.5 py-0.5 rounded">lessonId</code>) في الرابط.
-          </p>
-          <p className="text-xs text-slate-400">
-            إذا كنت قادماً من المنصة التعليمية، يرجى تشغيل اللعبة من داخل الدرس للاستمتاع بحفظ النقاط والمكافآت.
-          </p>
-          <button
-            type="button"
-            onClick={startDemoGame}
-            className="w-full py-3 px-6 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 font-black text-white text-lg shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer mt-1 active:scale-95"
-          >
-            <Play className="w-5 h-5 fill-white" />
-            <span>بدء اللعب التجريبي</span>
-          </button>
-        </div>
-      </div>
+      <WelcomeScreen
+        totalQuestions={apiQuestions.length}
+        onStart={() => setHasStarted(true)}
+        onExit={handleExitSite}
+        isLoading={isLoading}
+        error={initError}
+      />
     );
   }
 
@@ -707,160 +952,190 @@ export const App: React.FC = () => {
         <main dir="ltr" className="w-full max-w-6xl mx-auto my-auto px-1 sm:px-3 md:px-6 lg:px-8 py-0.5 sm:py-1 flex-1 min-h-0 flex flex-col justify-center overflow-hidden">
           <div className="relative w-full h-full min-h-0 flex-1 rounded-[1.25rem] sm:rounded-[2.5rem] bg-gradient-to-br from-white/35 via-white/20 to-white/10 backdrop-blur-3xl border-2 border-white/70 shadow-[inset_0_1px_2px_rgba(255,255,255,0.8),inset_0_-1px_1px_rgba(255,255,255,0.2),0_25px_60px_rgba(15,23,42,0.14)] p-1.5 sm:p-3 lg:p-5 flex flex-col justify-center overflow-hidden">
 
-            {currentWordItem && (
-              <>
-                {/* 1. MOBILE PORTRAIT (< sm): Smart 2-Tier Stack with Full-Width WordSlots */}
-                <div className="flex sm:hidden flex-col w-full h-full justify-between items-center overflow-hidden">
-                  {/* Top Header Row: [Monster Pod] | [Question Audio + Text] | [Turns Badge] */}
-                  <div className="w-full flex items-center justify-between gap-1 shrink-0 px-0.5 pt-0.5">
-                    {/* Monster Pod */}
-                    <div className="shrink-0 flex items-center justify-center pointer-events-none w-[clamp(70px,18vw,100px)]">
-                      <HangmanDisplay wrongGuessesCount={wrongGuessesCount} showThreatBadge={false} />
-                    </div>
+            {currentWordItem && (() => {
+              const extractedImg = extractImageFromHtml(currentWordItem.hint);
+              const effectiveImageUrl = currentWordItem.imageUrl || extractedImg || undefined;
+              const hasAudio = Boolean(currentWordItem.audioUrl && currentWordItem.audioUrl.trim().length > 0);
+              const hasText = isValidHint(currentWordItem.hint);
+              const hasImage = hasValidImage(effectiveImageUrl);
+              const cleanHint = removeImgTags(currentWordItem.hint) || currentWordItem.hint;
 
-                    {/* Question Audio + Text */}
-                    <div className="flex-1 flex items-center justify-center gap-1.5 px-1 min-w-0">
-                      {currentWordItem.audioUrl && (
-                        <button
-                          type="button"
-                          aria-label="تشغيل صوت السؤال"
-                          className={`question-audio-button ${isQuestionAudioPlaying ? 'is-playing' : ''}`}
-                          onClick={() => {
-                            if (!questionAudioRef.current) questionAudioRef.current = new Audio(currentWordItem.audioUrl!);
-                            questionAudioRef.current.src = currentWordItem.audioUrl!;
-                            questionAudioRef.current.currentTime = 0;
-                            questionAudioRef.current.onended = () => setIsQuestionAudioPlaying(false);
-                            questionAudioRef.current.play().then(() => setIsQuestionAudioPlaying(true)).catch(() => setIsQuestionAudioPlaying(false));
-                          }}
-                        >
-                          <svg viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 10v4h3l4 3V7l-4 3H4Z" />
-                            <path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" />
-                          </svg>
-                        </button>
-                      )}
-
-                      {currentWordItem.hint && currentWordItem.hint !== '.' && currentWordItem.hint !== '<p>.</p>' && currentWordItem.hint !== '<p>.</p>\n' && (
-                        <div
-                          dir="rtl"
-                          className="text-center text-white text-[clamp(1.05rem,3.6vw,1.45rem)] font-black tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)] leading-tight max-h-[58px] overflow-y-auto no-scrollbar"
-                          dangerouslySetInnerHTML={{ __html: currentWordItem.hint }}
-                        />
-                      )}
-                    </div>
-
-
-                  </div>
-
-                  {/* Center Row: Image (if provided) */}
-                  {currentWordItem.imageUrl && (currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE || (!currentWordItem.hint && !currentWordItem.audioUrl)) && (
-                    <div
-                      className="flex-1 flex items-center justify-center min-h-0 my-0.5 group cursor-zoom-in relative"
-                      onClick={() => setZoomedImage(currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE ? currentWordItem.imageUrl : bgImage)}
-                    >
-                      <img
-                        src={currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE ? currentWordItem.imageUrl : bgImage}
-                        alt="سؤال"
-                        className="max-h-[clamp(70px,18vh,135px)] max-w-full object-contain rounded-xl shadow-md border border-white/30"
-                      />
-                    </div>
-                  )}
-
-                  {/* Bottom Row: Full Width WordSlots */}
-                  <div className="w-full flex items-center justify-center text-center shrink-0 mt-auto pt-0.5 pb-0.5">
-                    <WordSlots
-                      targetWord={cleanArabicWord(currentWordItem.word)}
-                      guessedLetters={guessedLetters}
-                      revealAll={gameStatus === 'lost'}
-                    />
-                  </div>
-                </div>
-
-                {/* 2. TABLET & DESKTOP (>= sm): 3-Column Balanced Horizontal Layout */}
-                <div className="hidden sm:flex flex-row items-center justify-between w-full h-full gap-2 md:gap-4 overflow-hidden">
-                  {/* Left Section: Monster Pod */}
-                  <div className="shrink-0 z-10 flex items-center justify-center pointer-events-none w-[clamp(120px,22vw,260px)]">
-                    <HangmanDisplay wrongGuessesCount={wrongGuessesCount} />
-                  </div>
-
-                  {/* Center Section: Question Clue & Word Slots (Strictly Centered) */}
-                  <div className="flex-1 flex flex-col items-center justify-center text-center gap-1 sm:gap-1.5 pointer-events-auto z-20 min-w-0 px-1 sm:px-3 lg:px-6 h-full max-h-full overflow-hidden">
-                    {/* Question Clue Container (Responsive Audio, Image, and Text) */}
-                    <div
-                      className="w-full max-w-2xl flex flex-col items-center justify-center mx-auto shrink transition-all gap-1 sm:gap-1.5 max-h-[58%] overflow-y-auto no-scrollbar"
-                      onClick={(e) => {
-                        if ((e.target as HTMLElement).tagName === 'IMG') {
-                          setZoomedImage((e.target as HTMLImageElement).src);
-                        }
-                      }}
-                    >
-                      {/* Clue Row: Audio Button + Question Text */}
-                      <div className="w-full flex items-center justify-center gap-1.5 sm:gap-2.5 flex-wrap">
-                        {/* 1. Audio (if provided) */}
-                        {currentWordItem.audioUrl && (
+              return (
+                <>
+                  {/* 1. MOBILE (<= 650px): Dedicated 3-Row Layout */}
+                  <div className="question-area-mobile flex-col w-full h-full justify-center items-center gap-1 sm:gap-2 overflow-hidden">
+                    {/* ROW 1: Clue Header Row (Sound Icon + Big Text + Static Image with Modal) */}
+                    {(hasAudio || hasText || hasImage) && (
+                      <div
+                        dir="rtl"
+                        className={`w-full flex items-center ${
+                          hasText ? 'justify-between' : 'justify-center'
+                        } gap-2 shrink-0 px-1 pt-0 pb-0.5 min-h-[44px]`}
+                      >
+                        {/* 1. Sound Button (if provided) */}
+                        {hasAudio && (
                           <button
                             type="button"
                             aria-label="تشغيل صوت السؤال"
-                            className={`question-audio-button ${isQuestionAudioPlaying ? 'is-playing' : ''}`}
-                            onClick={() => {
-                              if (!questionAudioRef.current) questionAudioRef.current = new Audio(currentWordItem.audioUrl!);
-                              questionAudioRef.current.src = currentWordItem.audioUrl!;
-                              questionAudioRef.current.currentTime = 0;
-                              questionAudioRef.current.onended = () => setIsQuestionAudioPlaying(false);
-                              questionAudioRef.current.play().then(() => setIsQuestionAudioPlaying(true)).catch(() => setIsQuestionAudioPlaying(false));
-                            }}
+                            title="استمع إلى صوت السؤال"
+                            className={`question-audio-button shrink-0 ${isQuestionAudioPlaying ? 'is-playing' : ''}`}
+                            onClick={() => handleToggleQuestionAudio(currentWordItem.audioUrl)}
                           >
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
-                              <path d="M4 10v4h3l4 3V7l-4 3H4Z" />
-                              <path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" />
-                            </svg>
+                            <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />
                           </button>
                         )}
 
-                        {/* 2. Text / HTML Hint (if provided) */}
-                        {currentWordItem.hint && currentWordItem.hint !== '.' && currentWordItem.hint !== '<p>.</p>' && currentWordItem.hint !== '<p>.</p>\n' && (
+                        {/* 2. Text Question (Takes remaining space, big font, skipped if ".") */}
+                        {hasText && (
                           <div
                             dir="rtl"
-                            className="flex-1 min-w-0 text-center text-white text-[clamp(1.15rem,3.2vw,2.2rem)] font-black tracking-wide drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)] leading-tight [&_img]:max-w-full [&_img]:max-h-[clamp(50px,11vh,110px)] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0"
-                            dangerouslySetInnerHTML={{ __html: currentWordItem.hint }}
+                            style={{ fontSize: 'clamp(3.4rem, 17vw, 14rem)' }}
+                            className="flex-1 min-w-0 text-center text-white text-[clamp(3.4rem,17vw,14rem)] font-black tracking-wide leading-[1.05] max-h-[180px] overflow-y-auto no-scrollbar px-1 flex items-center justify-center cursor-default [&_img]:max-h-[75px] [&_img]:object-contain [&_img]:inline-block [&_img]:rounded-lg"
+                            onClick={(e) => {
+                              if ((e.target as HTMLElement).tagName === 'IMG') {
+                                setZoomedImage((e.target as HTMLImageElement).src);
+                              }
+                            }}
+                            dangerouslySetInnerHTML={{ __html: cleanHint! }}
                           />
                         )}
-                      </div>
 
-                      {/* 3. Image (if provided or as fallback if nothing else exists) */}
-                      {currentWordItem.imageUrl && (currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE || (!currentWordItem.hint && !currentWordItem.audioUrl)) && (
-                        <div className="relative group cursor-zoom-in mt-0.5">
-                          <img
-                            src={currentWordItem.imageUrl !== DEFAULT_FALLBACK_IMAGE ? currentWordItem.imageUrl : bgImage}
-                            alt="سؤال"
-                            className={`max-w-full object-contain rounded-xl sm:rounded-2xl shadow-[0_6px_20px_rgba(0,0,0,0.35)] border border-white/30 transition-transform duration-200 group-hover:scale-105 ${
-                              currentWordItem.hint
-                                ? 'max-h-[clamp(50px,11vh,115px)]'
-                                : 'max-h-[clamp(80px,21vh,165px)]'
+                        {/* 3. Static Size Image (clickable to open zoom modal) */}
+                        {hasImage && (
+                          <button
+                            type="button"
+                            aria-label="تكبير صورة السؤال"
+                            title="انقر لتكبير صورة السؤال"
+                            className={`relative shrink-0 rounded-2xl overflow-hidden border-2 border-white/80 shadow-lg group cursor-pointer active:scale-95 transition-transform bg-black/40 backdrop-blur-sm ${
+                              hasText
+                                ? 'w-[clamp(76px,20vw,100px)] h-[clamp(76px,20vw,100px)]'
+                                : 'w-[clamp(120px,36vw,170px)] h-[clamp(120px,36vw,170px)]'
                             }`}
-                            onClick={(e) => setZoomedImage((e.target as HTMLImageElement).src)}
-                          />
-                          <div className="absolute bottom-1 right-1 p-1 rounded-md bg-black/60 backdrop-blur-sm text-white/90 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                            <Maximize2 className="w-3.5 h-3.5" />
-                          </div>
-                        </div>
-                      )}
+                            onClick={() => setZoomedImage(effectiveImageUrl!)}
+                          >
+                            <img
+                              src={effectiveImageUrl!}
+                              alt="سؤال"
+                              className="w-full h-full object-contain p-1 transition-transform group-hover:scale-110"
+                              onError={() => {
+                                if (effectiveImageUrl) {
+                                  setFailedImages((prev) => ({ ...prev, [effectiveImageUrl]: true }));
+                                }
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 flex items-center justify-center transition-colors">
+                              <Maximize2 className="w-4 h-4 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]" />
+                            </div>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ROW 2: Hangman Monster (Dedicated Center Stage - Enlarged with reduced padding) */}
+                    <div className="w-full flex-1 min-h-0 flex flex-col items-center justify-center py-0 relative">
+                      <HangmanDisplay
+                        wrongGuessesCount={wrongGuessesCount}
+                        showThreatBadge={false}
+                        sizeClassName="w-[clamp(145px,46vw,240px)] h-[clamp(145px,46vw,240px)] max-h-[min(35vh,240px)]"
+                      />
                     </div>
 
-                    {/* Word Slots below Clues (Centered) */}
-                    <div className="w-full flex items-center justify-center text-center mx-auto shrink-0 mt-0.5 sm:mt-1">
+                    {/* ROW 3: Selected Letters (Word Slots - Tightly connected) */}
+                    <div className="w-full flex items-center justify-center text-center shrink-0 pt-0 pb-0.5">
                       <WordSlots
                         targetWord={cleanArabicWord(currentWordItem.word)}
                         guessedLetters={guessedLetters}
-                        revealAll={gameStatus === 'lost'}
+                        revealAll={isRevealingRightAnswer}
                       />
                     </div>
                   </div>
 
+                  {/* 2. TABLET & DESKTOP (> 650px): 3-Column Balanced Horizontal Layout */}
+                  <div className="question-area-desktop flex-row items-center justify-between w-full h-full gap-2 md:gap-4 overflow-hidden">
+                    {/* Left Section: Monster Pod */}
+                    <div className="shrink-0 z-10 flex items-center justify-center pointer-events-none w-[clamp(120px,22vw,260px)] tablet-monster-pod">
+                      <HangmanDisplay
+                        wrongGuessesCount={wrongGuessesCount}
+                        sizeClassName="tablet-monster-display w-[clamp(120px,18vw,230px)] h-[clamp(120px,18vw,230px)] max-h-[min(30vh,230px)]"
+                      />
+                    </div>
 
-                </div>
-              </>
-            )}
+                    {/* Center Section: Question Clue & Word Slots (Strictly Centered) */}
+                    <div className="flex-1 flex flex-col items-center justify-center text-center gap-1 sm:gap-1.5 pointer-events-auto z-20 min-w-0 px-1 sm:px-3 lg:px-6 h-full max-h-full overflow-hidden">
+                      {/* Question Clue Row (Sound + Very Big Text + Image in the SAME ROW on Big Screens) */}
+                      {(hasAudio || hasText || hasImage) && (
+                        <div
+                          dir="rtl"
+                          className="w-full max-w-5xl flex flex-row items-center justify-center mx-auto shrink transition-all gap-3 sm:gap-4 md:gap-6 px-2 py-1 bg-transparent border-0 shadow-none max-h-[65%] overflow-y-auto no-scrollbar"
+                          onClick={(e) => {
+                            if ((e.target as HTMLElement).tagName === 'IMG') {
+                              setZoomedImage((e.target as HTMLImageElement).src);
+                            }
+                          }}
+                        >
+                          {/* 1. Audio (if provided) */}
+                          {hasAudio && (
+                            <button
+                              type="button"
+                              aria-label="تشغيل صوت السؤال"
+                              title="استمع إلى صوت السؤال"
+                              className={`question-audio-button shrink-0 ${isQuestionAudioPlaying ? 'is-playing' : ''}`}
+                              onClick={() => handleToggleQuestionAudio(currentWordItem.audioUrl)}
+                            >
+                              <Volume2 className="w-6 h-6 sm:w-7 sm:h-7" />
+                            </button>
+                          )}
+
+                          {/* 2. Text / HTML Hint (Very Very Big Text Size in the SAME ROW) */}
+                          {hasText && (
+                            <div
+                              dir="rtl"
+                              style={{ fontSize: 'clamp(2.5rem, 12.5vw, 13.2rem)' }}
+                              className="flex-1 min-w-0 text-center text-white text-[clamp(2.5rem,12.5vw,13.2rem)] font-black tracking-wide leading-[1.05] max-h-[220px] overflow-y-auto no-scrollbar px-1 flex items-center justify-center cursor-default [&_img]:max-h-[85px] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0"
+                              dangerouslySetInnerHTML={{ __html: cleanHint! }}
+                            />
+                          )}
+
+                          {/* 3. Image in the SAME ROW (Side-by-side with text, clickable to zoom) */}
+                          {hasImage && (
+                            <button
+                              type="button"
+                              aria-label="تكبير صورة السؤال"
+                              title="انقر لتكبير صورة السؤال"
+                              className="relative shrink-0 rounded-2xl overflow-hidden border-2 border-white/60 shadow-xl group cursor-pointer active:scale-95 transition-transform bg-black/40 backdrop-blur-sm w-[clamp(80px,11vw,140px)] h-[clamp(80px,11vw,140px)] flex items-center justify-center p-1"
+                              onClick={() => setZoomedImage(effectiveImageUrl!)}
+                            >
+                              <img
+                                src={effectiveImageUrl!}
+                                alt="سؤال"
+                                className="w-full h-full object-contain rounded-xl transition-transform duration-300 group-hover:scale-105"
+                                onError={() => {
+                                  if (effectiveImageUrl) {
+                                    setFailedImages((prev) => ({ ...prev, [effectiveImageUrl]: true }));
+                                  }
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 flex items-center justify-center transition-colors">
+                                <Maximize2 className="w-5 h-5 text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Word Slots below Clues (Centered) */}
+                      <div className="w-full flex items-center justify-center text-center mx-auto shrink-0 mt-0.5 sm:mt-1">
+                        <WordSlots
+                          targetWord={cleanArabicWord(currentWordItem.word)}
+                          guessedLetters={guessedLetters}
+                          revealAll={isRevealingRightAnswer}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
 
           </div>
         </main>
@@ -873,7 +1148,7 @@ export const App: React.FC = () => {
                 onKeyPress={handleGuess}
                 guessedLetters={guessedLetters}
                 targetWord={currentWordItem.word}
-                disabled={gameStatus !== 'playing' || wrongGuessesCount >= MAX_ATTEMPTS}
+                disabled={gameStatus !== 'playing' || showGameOverModal || isRevealingRightAnswer || wrongGuessesCount >= MAX_ATTEMPTS}
               />
             )}
           </div>
@@ -882,15 +1157,15 @@ export const App: React.FC = () => {
       </div>
 
       {/* MODAL 1: Round End (Won / Lost) */}
-      {gameStatus !== 'playing' && currentWordItem && !sessionCompletionData && !isSubmittingFinal && (
+      {showGameOverModal && currentWordItem && !sessionCompletionData && !isSubmittingFinal && (
         <GameOverModal
-          status={gameStatus}
+          status={gameStatus === 'won' ? 'won' : 'lost'}
           wordItem={currentWordItem}
-          onNextWord={handleNextRound}
+          onNextWord={handleRoundModalComplete}
           onRestart={restartCurrentRound}
           streak={stats.streak}
           isLastQuestion={roundIndex >= totalRounds - 1}
-          onFinishSession={handleFinishSession}
+          onFinishSession={handleRoundModalComplete}
         />
       )}
 
@@ -958,17 +1233,34 @@ export const App: React.FC = () => {
       {/* MODAL 3: Zoomed Image Viewer */}
       {zoomedImage && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-pop cursor-pointer"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-pop cursor-pointer"
           onClick={() => setZoomedImage(null)}
         >
-          <div className="relative max-w-3xl w-full flex justify-center items-center">
+          <div
+            className="relative max-w-3xl w-full flex flex-col justify-center items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setZoomedImage(null)}
+              className="absolute -top-12 left-2 sm:left-0 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 backdrop-blur-sm transition-all"
+              aria-label="إغلاق"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
             <img
               src={zoomedImage}
               alt="صورة مكبرة"
-              className="max-w-full max-h-[85vh] object-contain rounded-2xl shadow-2xl border-2 border-white/20"
+              className="max-w-full max-h-[82vh] object-contain rounded-2xl shadow-2xl border-2 border-white/20"
             />
-            <div className="absolute -top-10 text-white font-bold tracking-widest animate-pulse">
-              اضغط في أي مكان للإغلاق
+            <div
+              className="mt-3 text-white/90 text-sm font-bold tracking-widest text-center cursor-pointer"
+              onClick={() => setZoomedImage(null)}
+            >
+              اضغط في أي مكان أو على الزر للإغلاق
             </div>
           </div>
         </div>

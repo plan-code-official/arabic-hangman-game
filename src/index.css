@@ -139,3 +139,32 @@ button {
 button:active:not(:disabled) {
   transform: scale(0.94);
 }
+
+/* Responsive Question Area: <= 650px (Mobile 3-Row Layout) vs > 650px (Desktop Balanced Layout) */
+.question-area-mobile {
+  display: flex !important;
+}
+.question-area-desktop {
+  display: none !important;
+}
+
+@media (min-width: 651px) {
+  .question-area-mobile {
+    display: none !important;
+  }
+  .question-area-desktop {
+    display: flex !important;
+  }
+}
+
+/* Tablet Screen Only (651px - 1024px): Significantly enlarge Monster Pod & Display */
+@media (min-width: 651px) and (max-width: 1024px) {
+  .tablet-monster-pod {
+    width: clamp(210px, 32vw, 320px) !important;
+  }
+  .tablet-monster-display {
+    width: clamp(200px, 30vw, 300px) !important;
+    height: clamp(200px, 30vw, 300px) !important;
+    max-height: min(42vh, 300px) !important;
+  }
+}

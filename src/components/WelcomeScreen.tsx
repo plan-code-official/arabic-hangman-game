@@ -6,7 +6,8 @@ import descriptionImg from '../assets/description.png';
 import startButtonImg from '../assets/start_transparent.png';
 import goldCoinImg from '../assets/daddcoin.webp';
 import exitButtonImg from '../assets/Exit1.png';
-import backgroundImg from '../assets/Desktop - 91.png';
+import ErrorScreen from './ErrorScreen/ErrorScreen';
+const backgroundImg = '/BG.jpeg';
 
 interface WelcomeScreenProps {
   totalQuestions: number;
@@ -27,7 +28,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   const hasQuestions = totalQuestions > 0;
 
   if (error) {
-    return <div className="welcome-error font-arabic" dir="rtl" style={{ textAlign: 'center', padding: '20px' }}>عذرا حدث خطأ: {error}</div>;
+    return <ErrorScreen onExit={onExit} description={error} />;
   }
 
   return (

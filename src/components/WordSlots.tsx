@@ -60,15 +60,17 @@ export const WordSlots: React.FC<WordSlotsProps> = ({
           return (
             <div
               key={index}
-              className={`${box} rounded-lg sm:rounded-xl bg-[#2563eb] border-2 border-white/50 shadow-lg shadow-blue-600/40 flex items-center justify-center text-center transition-all duration-300 ${
+              className={`${box} rounded-lg sm:rounded-xl ${
+                !isGuessed && revealAll
+                  ? 'bg-amber-500/95 border-2 border-amber-300 shadow-lg shadow-amber-500/50'
+                  : 'bg-[#2563eb] border-2 border-white/50 shadow-lg shadow-blue-600/40'
+              } flex items-center justify-center text-center transition-all duration-300 ${
                 showLetter ? 'animate-pop' : ''
               }`}
             >
               {showLetter ? (
                 <span
-                  className={`${font} font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] leading-none flex items-center justify-center ${
-                    !isGuessed && revealAll ? 'text-rose-200' : ''
-                  }`}
+                  className={`${font} font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] leading-none flex items-center justify-center`}
                 >
                   {char}
                 </span>

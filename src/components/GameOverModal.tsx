@@ -23,15 +23,11 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (isLastQuestion && onFinishSession) {
-        onFinishSession();
-      } else {
-        onNextWord();
-      }
-    }, 1500); // 1.5 seconds delay
+      onNextWord();
+    }, 1200);
 
     return () => clearTimeout(timer);
-  }, [isLastQuestion, onFinishSession, onNextWord]);
+  }, [onNextWord]);
 
   return (
     <div className="answer-feedback-overlay fixed inset-0 z-[100] select-none pointer-events-none">
