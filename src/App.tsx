@@ -1171,8 +1171,8 @@ export const App: React.FC = () => {
 
       {/* Submitting Answers & Completing Session Overlay */}
       {isSubmittingFinal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 select-none">
-          <Loader2 className="w-16 h-16 text-blue-400 animate-spin" />
+        <div className="submitting-overlay" aria-busy="true">
+          <div className="submitting-spinner" />
         </div>
       )}
 
