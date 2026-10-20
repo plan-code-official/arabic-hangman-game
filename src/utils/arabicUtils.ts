@@ -4,7 +4,7 @@ export const ARABIC_ALPHABET_ROWS = [
   ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د'],
   ['ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط'],
   ['ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م'],
-  ['ن', 'ه', 'و', 'ي'],
+  ['ن', 'ه', 'ة', 'و', 'ي'],
 ];
 
 // Flat list of all available keyboard letters
@@ -13,8 +13,7 @@ export const ALL_ARABIC_KEYS = ARABIC_ALPHABET_ROWS.flat();
 /**
  * Normalizes an Arabic letter or string for flexible matching
  * Maps all variations of Alef (أ, إ, آ, ٱ) -> 'ا'
- * Maps (ة) -> 'ه' (optional)
- * Maps (ى) -> 'ي'
+ * Maps (ى, ئ) -> 'ي'
  * Removes Arabic Tashkeel (diacritics)
  */
 export function normalizeArabicChar(char: string): string {
@@ -28,11 +27,6 @@ export function normalizeArabicChar(char: string): string {
   // Normalize Alef
   if (['أ', 'إ', 'آ', 'ٱ', 'ا'].includes(normalized)) {
     return 'ا';
-  }
-  
-  // Normalize Taa Marbuta / Haa (allows 'ه' on keyboard to match 'ة' in words like فراولة and نظارة)
-  if (normalized === 'ة') {
-    return 'ه';
   }
   
   // Normalize Yaa / Alef Maksura / Hamza on Nabra (e.g. طائرة)
