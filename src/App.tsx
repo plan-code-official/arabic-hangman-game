@@ -959,6 +959,14 @@ export const App: React.FC = () => {
               const hasText = isValidHint(currentWordItem.hint);
               const hasImage = hasValidImage(effectiveImageUrl);
               const cleanHint = removeImgTags(currentWordItem.hint) || currentWordItem.hint;
+              const rawTextLength = cleanHint ? cleanHint.replace(/<[^>]*>/g, '').trim().length : 0;
+              const desktopFontSize = rawTextLength > 60
+                ? 'clamp(1.6rem, min(4.5vw, 7.5vh), 2.8rem)'
+                : rawTextLength > 40
+                ? 'clamp(1.9rem, min(5.5vw, 9.5vh), 3.6rem)'
+                : rawTextLength > 20
+                ? 'clamp(2.3rem, min(7vw, 12vh), 4.8rem)'
+                : 'clamp(2.8rem, min(9vw, 15vh), 6.5rem)';
 
               return (
                 <>
@@ -1060,13 +1068,13 @@ export const App: React.FC = () => {
                       />
                     </div>
 
-                    {/* Center Section: Question Clue & Word Slots (Strictly Centered) */}
-                    <div className="flex-1 flex flex-col items-center justify-center text-center gap-1 sm:gap-1.5 pointer-events-auto z-20 min-w-0 px-1 sm:px-3 lg:px-6 h-full max-h-full overflow-hidden">
-                      {/* Question Clue Row (Sound + Very Big Text + Image in the SAME ROW on Big Screens) */}
+                    {/* Center Section: Question Clue & Word Slots (Top-aligned clue, zero scroll, full text visible) */}
+                    <div className="flex-1 flex flex-col items-center justify-start text-center pointer-events-auto z-20 min-w-0 px-1 sm:px-3 lg:px-6 h-full max-h-full overflow-hidden pt-1 sm:pt-2 md:pt-3 pb-1">
+                      {/* Question Clue Row (Sound + Full Visible Text Without Scroll + Image in the SAME ROW on Big Screens) */}
                       {(hasAudio || hasText || hasImage) && (
                         <div
                           dir="rtl"
-                          className="w-full max-w-5xl flex flex-row items-center justify-center mx-auto shrink transition-all gap-3 sm:gap-4 md:gap-6 px-2 py-1 bg-transparent border-0 shadow-none max-h-[65%] overflow-y-auto no-scrollbar"
+                          className="w-full max-w-5xl flex flex-row items-center justify-center mx-auto flex-1 min-h-0 transition-all gap-3 sm:gap-4 md:gap-6 px-2 pt-0 pb-1 bg-transparent border-0 shadow-none overflow-hidden"
                           onClick={(e) => {
                             if ((e.target as HTMLElement).tagName === 'IMG') {
                               setZoomedImage((e.target as HTMLImageElement).src);
@@ -1086,12 +1094,12 @@ export const App: React.FC = () => {
                             </button>
                           )}
 
-                          {/* 2. Text / HTML Hint (Very Very Big Text Size in the SAME ROW) */}
+                          {/* 2. Text / HTML Hint (Rendered full text without scrolling, positioned at top) */}
                           {hasText && (
                             <div
                               dir="rtl"
-                              style={{ fontSize: 'clamp(2.5rem, 12.5vw, 13.2rem)' }}
-                              className="flex-1 min-w-0 text-center text-white text-[clamp(2.5rem,12.5vw,13.2rem)] font-black tracking-wide leading-[1.05] max-h-[220px] overflow-y-auto no-scrollbar px-1 flex items-center justify-center cursor-default [&_img]:max-h-[85px] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0"
+                              style={{ fontSize: desktopFontSize }}
+                              className="flex-1 min-w-0 text-center text-white font-black tracking-wide leading-[1.12] overflow-hidden px-2 flex items-center justify-center cursor-default [&_img]:max-h-[80px] [&_img]:object-contain [&_img]:rounded-xl [&_img]:cursor-zoom-in [&_p]:m-0"
                               dangerouslySetInnerHTML={{ __html: cleanHint! }}
                             />
                           )}
@@ -1102,7 +1110,7 @@ export const App: React.FC = () => {
                               type="button"
                               aria-label="تكبير صورة السؤال"
                               title="انقر لتكبير صورة السؤال"
-                              className="relative shrink-0 rounded-2xl overflow-hidden border-2 border-white/60 shadow-xl group cursor-pointer active:scale-95 transition-transform bg-black/40 backdrop-blur-sm w-[clamp(80px,11vw,140px)] h-[clamp(80px,11vw,140px)] flex items-center justify-center p-1"
+                              className="relative shrink-0 rounded-2xl overflow-hidden border-2 border-white/60 shadow-xl group cursor-pointer active:scale-95 transition-transform bg-black/40 backdrop-blur-sm w-[clamp(80px,10vw,130px)] h-[clamp(80px,10vw,130px)] flex items-center justify-center p-1"
                               onClick={() => setZoomedImage(effectiveImageUrl!)}
                             >
                               <img
@@ -1123,8 +1131,8 @@ export const App: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Word Slots below Clues (Centered) */}
-                      <div className="w-full flex items-center justify-center text-center mx-auto shrink-0 mt-0.5 sm:mt-1">
+                      {/* Word Slots below Clues (Positioned at bottom with mt-auto, completely separated) */}
+                      <div className="w-full flex items-center justify-center text-center mx-auto shrink-0 mt-auto pt-1 pb-1">
                         <WordSlots
                           targetWord={cleanArabicWord(currentWordItem.word)}
                           guessedLetters={guessedLetters}

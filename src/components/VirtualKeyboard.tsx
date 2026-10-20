@@ -65,7 +65,7 @@ export const VirtualKeyboard: React.FC<VirtualKeyboardProps> = ({
                   disabled ? 'opacity-50 pointer-events-none' : ''
                 }`}
               >
-                {letter}
+                <span className="md:-translate-y-0.5 inline-flex items-center justify-center">{letter}</span>
               </button>
             );
           })}

@@ -70,12 +70,12 @@ export const WordSlots: React.FC<WordSlotsProps> = ({
             >
               {showLetter ? (
                 <span
-                  className={`${font} font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] leading-none flex items-center justify-center`}
+                  className={`${font} font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)] leading-none flex items-center justify-center md:-translate-y-1`}
                 >
                   {char}
                 </span>
               ) : (
-                <span className={`invisible ${font} font-black leading-none`}>
+                <span className={`invisible ${font} font-black leading-none md:-translate-y-1`}>
                   {char}
                 </span>
               )}
