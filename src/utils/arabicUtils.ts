@@ -4,7 +4,7 @@ export const ARABIC_ALPHABET_ROWS = [
   ['ا', 'ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'د'],
   ['ذ', 'ر', 'ز', 'س', 'ش', 'ص', 'ض', 'ط'],
   ['ظ', 'ع', 'غ', 'ف', 'ق', 'ك', 'ل', 'م'],
-  ['ن', 'ه', 'ة', 'و', 'ي'],
+  ['ن', 'ه', 'ة', 'و', 'ي', 'ء', 'ؤ', 'ئ'],
 ];
 
 // Flat list of all available keyboard letters
@@ -13,30 +13,29 @@ export const ALL_ARABIC_KEYS = ARABIC_ALPHABET_ROWS.flat();
 /**
  * Normalizes an Arabic letter or string for flexible matching
  * Maps all variations of Alef (أ, إ, آ, ٱ) -> 'ا'
- * Maps (ى, ئ) -> 'ي'
- * Removes Arabic Tashkeel (diacritics)
+ * Maps Alef Maksura (ى) -> 'ي'
+ * Preserves distinct letters ('ة', 'ء', 'ؤ', 'ئ')
+ * Removes Arabic Tashkeel (diacritics) and Tatweel
  */
 export function normalizeArabicChar(char: string): string {
   if (!char) return '';
   
-  let normalized = char;
-  
-  // Remove tashkeel / harakat
-  normalized = normalized.replace(/[\u064B-\u065F\u0670]/g, '');
+  let normalized = char.normalize('NFC');
 
-  // Normalize Alef
+  // Normalize decomposed hamza on nabra (ىٔ) to precomposed ئ
+  normalized = normalized.replace(/\u0649\u0654/g, 'ئ');
+  
+  // Remove tashkeel / harakat and tatweel
+  normalized = normalized.replace(/[\u064B-\u065F\u0670\u0640]/g, '');
+
+  // Normalize Alef variations to bare Alef 'ا'
   if (['أ', 'إ', 'آ', 'ٱ', 'ا'].includes(normalized)) {
     return 'ا';
   }
   
-  // Normalize Yaa / Alef Maksura / Hamza on Nabra (e.g. طائرة)
-  if (['ى', 'ئ'].includes(normalized)) {
+  // Normalize Alef Maksura to Yaa
+  if (normalized === 'ى') {
     return 'ي';
-  }
-
-  // Normalize Waw with Hamza
-  if (normalized === 'ؤ') {
-    return 'و';
   }
 
   return normalized;
@@ -51,10 +50,12 @@ export function isArabicCharMatch(guessedChar: string, targetChar: string): bool
 }
 
 /**
- * Cleans word: removes spaces if needed, removes diacritics
+ * Cleans word: removes spaces if needed, removes diacritics and tatweel
  */
 export function cleanArabicWord(word: string): string {
-  return word.trim().replace(/[\u064B-\u065F\u0670]/g, '');
+  let cleaned = word.trim().normalize('NFC');
+  cleaned = cleaned.replace(/\u0649\u0654/g, 'ئ');
+  return cleaned.replace(/[\u064B-\u065F\u0670\u0640]/g, '');
 }
 
 /**
